@@ -154,13 +154,14 @@ body.modal-open{position:fixed;left:0;right:0;overflow:hidden}
 
 /* ---- Bản in / xuất file F-002 — NGUYÊN BẢN VSP-000-ATMT-448/F-002 pb.06 ---- */
 .doc{background:#fff}
-.f002{font-family:"Times New Roman",Times,serif;font-size:13pt;line-height:1.22;color:#000}
+.f002{font-family:"Times New Roman",Times,serif;font-size:13pt;line-height:1.1;color:#000}
 .f002 .page{background:#fff;max-width:100%;width:180mm;margin:0 auto 8mm}
+.f002 table.g{table-layout:fixed}
+.f002 table.g th,.f002 table.g td{word-break:break-word;overflow-wrap:break-word}
 @media screen and (max-width:700px){
   .f002 .page{width:100%}
   .f002{font-size:11.5pt}
-  .f002 table.g{table-layout:fixed}
-  .f002 table.g th,.f002 table.g td{word-break:break-word;overflow-wrap:break-word;font-size:10.5pt}
+  .f002 table.g th,.f002 table.g td{font-size:10.5pt}
   .f002 .hdr,.f002 .gd{table-layout:fixed;width:100%}
 }
 .f002-photo{margin-top:5pt;text-align:center}
@@ -168,31 +169,31 @@ body.modal-open{position:fixed;left:0;right:0;overflow:hidden}
 .f002-photo .cap{font-size:9pt;font-style:italic;color:#555;margin-top:2pt}
 .f002 .pgbrk{page-break-before:always}
 .f002 .hdr{width:100%;border:1pt solid #000;border-collapse:collapse;margin:0 0 6pt}
-.f002 .hdr td{border:0;padding:4pt 6pt;vertical-align:middle}
+.f002 .hdr td{border:0;padding:3pt 6pt;vertical-align:middle}
 .f002 .hdr .lg{width:26%;text-align:center;border-right:1pt solid #000}
-.f002 .hdr .lg img{max-width:100%;max-height:18mm}
+.f002 .hdr .lg img{max-width:100%;max-height:13mm}
 .f002 .hdr .lg .txt{border:1pt solid #C00;color:#C00;font-family:Arial,Helvetica,sans-serif;
   font-size:9pt;font-weight:700;letter-spacing:.4pt;padding:6pt 2pt}
 .f002 .hdr .ti{text-align:center;font-weight:700;font-size:11pt;line-height:1.15;text-transform:uppercase}
-.f002 .apx{text-align:right;font-style:italic;font-size:11.5pt;line-height:1.2;margin:2pt 0 6pt}
-.f002 .t1{text-align:center;font-weight:700;font-size:13pt;text-transform:uppercase;line-height:1.25;margin:0}
-.f002 .t2{text-align:center;font-weight:700;font-size:13pt;margin:2pt 0 8pt}
-.f002 p{margin:3pt 0}
+.f002 .apx{text-align:right;font-style:italic;font-size:11.5pt;line-height:1.15;margin:1pt 0 4pt}
+.f002 .t1{text-align:center;font-weight:700;font-size:13pt;text-transform:uppercase;line-height:1.2;margin:0}
+.f002 .t2{text-align:center;font-weight:700;font-size:13pt;margin:1pt 0 5pt}
+.f002 p{margin:2pt 0}
 .f002 p.j{text-align:justify}
-.f002 .gd{border-collapse:collapse;margin:4pt 0}
+.f002 .gd{border-collapse:collapse;margin:3pt 0}
 .f002 .gd td{border:0;padding:0 8pt 0 0;vertical-align:top}
 .f002 .gd .lbl{white-space:nowrap}
 .f002 .bx{font-family:"Segoe UI Symbol","Arial Unicode MS",Arial,sans-serif}
-.f002 table.g{width:100%;border-collapse:collapse;margin:5pt 0 8pt}
-.f002 table.g th,.f002 table.g td{border:1pt solid #000;padding:3pt 4pt;font-size:12.5pt;
-  vertical-align:top;line-height:1.15}
+.f002 table.g{width:100%;border-collapse:collapse;margin:4pt 0 6pt}
+.f002 table.g th,.f002 table.g td{border:1pt solid #000;padding:2pt 4pt;font-size:12.5pt;
+  vertical-align:top;line-height:1.12}
 .f002 table.g th{text-align:center;font-weight:700}
 .f002 table.g td.c{text-align:center}
-.f002 table.g td.h{height:22pt}
-.f002 .note{font-style:italic;font-size:12pt;margin-top:5pt;line-height:1.2}
-.f002 .sig{margin-top:10pt}
+.f002 table.g td.h{height:12pt}
+.f002 .note{font-style:italic;font-size:12pt;margin-top:4pt;line-height:1.15}
+.f002 .sig{margin-top:8pt}
 .f002 .sig p{margin:2pt 0}
-.f002 .recv{margin-top:10pt;font-size:11.5pt;line-height:1.2}
+.f002 .recv{margin-top:8pt;font-size:11.5pt;line-height:1.15}
 .f002 .recv .h{font-style:italic;text-decoration:underline}
 .f002 .recv .li{padding-left:6mm}
 .f002 table.ft{width:100%;border-collapse:collapse;border-top:1pt solid #000;margin-top:8pt}
@@ -1030,7 +1031,7 @@ function f002Header() {
 
 function f002Footer(n) {
   return '<table class="ft"><tr><td>VSP-000-ATMT-448/F-002</td>' +
-    '<td class="ct">Phiên bản: 06</td><td class="rt">Trang ' + n + ' / 2</td></tr></table>';
+    '<td class="ct">Phiên bản: 06</td><td class="rt">Trang ' + n + ' / 3</td></tr></table>';
 }
 
 function buildDocHTML(withPhotos) {
@@ -1068,7 +1069,7 @@ function buildDocHTML(withPhotos) {
   h += '<p>Đơn vị cơ sở quản lý công trình: ' + fld(bb.donvi, 30) + '</p>';
   h += '<p>Подразделение, отвечающиее за объект:</p>';
 
-  h += '<p style="margin-top:6pt">1. Thành phần đoàn kiểm tra gồm/ Состав комиссии по проверке подрядчика:</p>';
+  h += '<p style="margin-top:4pt">1. Thành phần đoàn kiểm tra gồm/ Состав комиссии по проверке подрядчика:</p>';
   h += '<table class="g"><tr>' +
        '<th style="width:8%">STT<br>П.п.</th><th style="width:30%">Họ và tên<br>Ф.И.О.</th>' +
        '<th style="width:40%">Chức vụ<br>Должность</th><th style="width:22%">Đơn vị<br>Подразделение</th></tr>';
@@ -1085,14 +1086,14 @@ function buildDocHTML(withPhotos) {
        ((bb.coso || "").trim() ? nl(bb.coso) : dots(58)) + '</p>';
   if (!(bb.coso || "").trim()) h += '<p>' + dots(92) + '</p>';
 
-  h += '<p class="j" style="margin-top:4pt">- Căn cứ vào các tài liệu quy phạm, quy trình, hướng dẫn, tiêu chuẩn và ' +
+  h += '<p class="j" style="margin-top:2pt">- Căn cứ vào các tài liệu quy phạm, quy trình, hướng dẫn, tiêu chuẩn và ' +
        'các tài liệu khác về ATSKMT đang có hiệu lực tại LD Việt-Nga Vietsovpetro / На основании нормативных ' +
        'документов, процедур, инструкций, стандартов и других действующих документов в области БЗиООС ' +
        'СП «Вьетсовпетро»;</p>';
   h += '<p class="j">- Căn cứ vào các vi phạm/ sự không phù hợp đã được phát hiện tại thời điểm kiểm tra / ' +
        'На основании нарушений / несоответствий, которые были обнаружены во время проверки.</p>';
 
-  h += '<p class="j" style="margin-top:5pt">3. Đoàn kiểm tra yêu cầu Lãnh đạo nhà thầu, đại diện nhà thầu trên ' +
+  h += '<p class="j" style="margin-top:2pt">3. Đoàn kiểm tra yêu cầu Lãnh đạo nhà thầu, đại diện nhà thầu trên ' +
        'công trình khắc phục các vi phạm/ sự không phù hợp dưới đây (2) và gửi kết quả khắc phục bằng văn bản ' +
        'theo đúng thời hạn hoàn thành (3) về địa chỉ:</p>';
   h += '<p>+ Trưởng đoàn kiểm tra: Ông (bà) ' + fld(bb.truongdoan, 30) + '</p>';
@@ -1137,6 +1138,12 @@ function buildDocHTML(withPhotos) {
          nl(r2.dexuat || "") + '</td></tr>';
   }
   h += '</table>';
+  h += f002Footer(2);
+  h += '</div>';
+
+  /* ---------- TRANG 3 ---------- */
+  h += '<div class="page pgbrk">';
+  h += f002Header();
 
   h += '<div class="note">' +
        '<div>*Lưu ý: -Nếu không phát hiện vi phạm, cần ghi rõ: “Không phát hiện”</div>' +
@@ -1169,7 +1176,7 @@ function buildDocHTML(withPhotos) {
        '<div>5. Đơn vị cơ sở quản lý công trình / Подразделение, отвечающиее за объектам.</div>' +
        '<div>6.Giám sát dự án của VSP về kỹ thuật – an toàn/ Супервайзор проекта СП «Вьетсовпетро» ' +
        'по технике - безопасности.</div></div></div>';
-  h += f002Footer(2);
+  h += f002Footer(3);
   h += '</div>';
 
   return h;
@@ -1180,32 +1187,35 @@ function f002Css() {
   return '@page{size:A4 portrait;margin:12mm 14mm 10mm 16mm}' +
     '*{box-sizing:border-box}' +
     'body{margin:0;padding:0;background:#fff}' +
-    '.f002{font-family:"Times New Roman",Times,serif;font-size:13pt;line-height:1.22;color:#000}' +
+    '.f002{font-family:"Times New Roman",Times,serif;font-size:13pt;line-height:1.1;color:#000}' +
     '.f002 .page{background:#fff}' +
     '.f002 .pgbrk{page-break-before:always}' +
+    '.f002-photo{margin-top:5pt;text-align:center}' +
+    '.f002-photo img{max-width:160px;max-height:160px;border:1pt solid #999;object-fit:cover}' +
+    '.f002-photo .cap{font-size:9pt;font-style:italic;color:#555;margin-top:2pt}' +
     '.f002 .hdr{width:100%;border:1pt solid #000;border-collapse:collapse;margin:0 0 6pt}' +
-    '.f002 .hdr td{border:0;padding:4pt 6pt;vertical-align:middle}' +
+    '.f002 .hdr td{border:0;padding:3pt 6pt;vertical-align:middle}' +
     '.f002 .hdr .lg{width:26%;text-align:center;border-right:1pt solid #000}' +
-    '.f002 .hdr .lg img{max-width:100%;max-height:18mm}' +
+    '.f002 .hdr .lg img{max-width:100%;max-height:13mm}' +
     '.f002 .hdr .lg .txt{border:1pt solid #C00;color:#C00;font-family:Arial,Helvetica,sans-serif;' +
       'font-size:9pt;font-weight:700;letter-spacing:.4pt;padding:6pt 2pt}' +
     '.f002 .hdr .ti{text-align:center;font-weight:700;font-size:11pt;line-height:1.15;text-transform:uppercase}' +
-    '.f002 .apx{text-align:right;font-style:italic;font-size:11.5pt;line-height:1.2;margin:2pt 0 6pt}' +
-    '.f002 .t1{text-align:center;font-weight:700;font-size:13pt;text-transform:uppercase;line-height:1.25;margin:0}' +
-    '.f002 .t2{text-align:center;font-weight:700;font-size:13pt;margin:2pt 0 8pt}' +
-    '.f002 p{margin:3pt 0}.f002 p.j{text-align:justify}' +
-    '.f002 .gd{border-collapse:collapse;margin:4pt 0}' +
+    '.f002 .apx{text-align:right;font-style:italic;font-size:11.5pt;line-height:1.15;margin:1pt 0 4pt}' +
+    '.f002 .t1{text-align:center;font-weight:700;font-size:13pt;text-transform:uppercase;line-height:1.2;margin:0}' +
+    '.f002 .t2{text-align:center;font-weight:700;font-size:13pt;margin:1pt 0 5pt}' +
+    '.f002 p{margin:2pt 0}.f002 p.j{text-align:justify}' +
+    '.f002 .gd{border-collapse:collapse;margin:3pt 0}' +
     '.f002 .gd td{border:0;padding:0 8pt 0 0;vertical-align:top}' +
     '.f002 .gd .lbl{white-space:nowrap}' +
     '.f002 .bx{font-family:"Segoe UI Symbol","Arial Unicode MS",Arial,sans-serif}' +
-    '.f002 table.g{width:100%;border-collapse:collapse;margin:5pt 0 8pt}' +
-    '.f002 table.g th,.f002 table.g td{border:1pt solid #000;padding:3pt 4pt;font-size:12.5pt;' +
-      'vertical-align:top;line-height:1.15}' +
+    '.f002 table.g{width:100%;table-layout:fixed;border-collapse:collapse;margin:4pt 0 6pt}' +
+    '.f002 table.g th,.f002 table.g td{border:1pt solid #000;padding:2pt 4pt;font-size:12.5pt;' +
+      'vertical-align:top;line-height:1.12;word-break:break-word;overflow-wrap:break-word}' +
     '.f002 table.g th{text-align:center;font-weight:700}' +
-    '.f002 table.g td.c{text-align:center}.f002 table.g td.h{height:22pt}' +
-    '.f002 .note{font-style:italic;font-size:12pt;margin-top:5pt;line-height:1.2}' +
-    '.f002 .sig{margin-top:10pt}.f002 .sig p{margin:2pt 0}' +
-    '.f002 .recv{margin-top:10pt;font-size:11.5pt;line-height:1.2}' +
+    '.f002 table.g td.c{text-align:center}.f002 table.g td.h{height:12pt}' +
+    '.f002 .note{font-style:italic;font-size:12pt;margin-top:4pt;line-height:1.15}' +
+    '.f002 .sig{margin-top:8pt}.f002 .sig p{margin:2pt 0}' +
+    '.f002 .recv{margin-top:8pt;font-size:11.5pt;line-height:1.15}' +
     '.f002 .recv .h{font-style:italic;text-decoration:underline}' +
     '.f002 .recv .li{padding-left:6mm}' +
     '.f002 table.ft{width:100%;border-collapse:collapse;border-top:1pt solid #000;margin-top:8pt}' +
