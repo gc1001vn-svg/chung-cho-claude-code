@@ -151,9 +151,19 @@ body{
 .vp-actions button.acc2{border-style:solid;border-color:var(--acc);color:var(--acc);font-weight:700}
 
 /* ---- Bản in / xuất file F-002 — NGUYÊN BẢN VSP-000-ATMT-448/F-002 pb.06 ---- */
-.doc{background:#fff;overflow-x:auto}
+.doc{background:#fff}
 .f002{font-family:"Times New Roman",Times,serif;font-size:13pt;line-height:1.22;color:#000}
-.f002 .page{background:#fff;max-width:180mm;margin:0 auto 8mm}
+.f002 .page{background:#fff;max-width:100%;width:180mm;margin:0 auto 8mm}
+@media screen and (max-width:700px){
+  .f002 .page{width:100%}
+  .f002{font-size:11.5pt}
+  .f002 table.g{table-layout:fixed}
+  .f002 table.g th,.f002 table.g td{word-break:break-word;overflow-wrap:break-word;font-size:10.5pt}
+  .f002 .hdr,.f002 .gd{table-layout:fixed;width:100%}
+}
+.f002-photo{margin-top:5pt;text-align:center}
+.f002-photo img{max-width:160px;max-height:160px;border:1pt solid #999;object-fit:cover}
+.f002-photo .cap{font-size:9pt;font-style:italic;color:#555;margin-top:2pt}
 .f002 .pgbrk{page-break-before:always}
 .f002 .hdr{width:100%;border:1pt solid #000;border-collapse:collapse;margin:0 0 6pt}
 .f002 .hdr td{border:0;padding:4pt 6pt;vertical-align:middle}
@@ -198,6 +208,7 @@ body{
     border-radius:0!important;background:#fff!important}
   .f002 .page{max-width:none;margin:0}
   .f002 .page+.page{page-break-before:always}
+  .f002-photo{display:none!important}
 }
 </style>
 </head>
@@ -1000,7 +1011,7 @@ function f002Footer(n) {
     '<td class="ct">Phiên bản: 06</td><td class="rt">Trang ' + n + ' / 2</td></tr></table>';
 }
 
-function buildDocHTML() {
+function buildDocHTML(withPhotos) {
   var doanRows = bb.doan.filter(function (p) { return (p.ten || "").trim() || (p.chuc || "").trim(); });
   var vpRows   = bb.viPham.filter(function (r) { return (r.noidung || "").trim(); });
   var kcRows   = bb.khuyenCao.filter(function (r) { return (r.noidung || "").trim() || (r.dexuat || "").trim(); });
@@ -1086,7 +1097,9 @@ function buildDocHTML() {
   var nV = Math.max(vpRows.length, 3);
   for (var b1 = 0; b1 < nV; b1++) {
     var r1 = vpRows[b1];
-    var nd = r1 ? ((r1.lsr ? "<b>[" + esc(r1.lsr) + "]</b> " : "") + nl(r1.noidung)) : (b1 === 0 && !vpRows.length ? "Không phát hiện / Не обнаружено" : "");
+    var photoHtml = (withPhotos && r1 && r1.photo)
+      ? '<div class="f002-photo"><img src="' + r1.photo + '"><div class="cap">Ảnh bằng chứng</div></div>' : "";
+    var nd = r1 ? ((r1.lsr ? "<b>[" + esc(r1.lsr) + "]</b> " : "") + nl(r1.noidung) + photoHtml) : (b1 === 0 && !vpRows.length ? "Không phát hiện / Не обнаружено" : "");
     h += '<tr><td class="c h">' + (b1 + 1) + '</td><td>' + nd + '</td><td class="c">' +
          esc(r1 ? r1.thoihan : "") + '</td><td class="c">' + esc(r1 ? r1.trachnhiem : "") + '</td></tr>';
   }
@@ -1182,7 +1195,7 @@ function f002Standalone() {
   return '<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8">' +
     '<meta name="viewport" content="width=device-width,initial-scale=1">' +
     '<title>VSP-000-ATMT-448-F-002</title><style>' + f002Css() + '</style></head>' +
-    '<body><div class="f002">' + buildDocHTML() + '</div></body></html>';
+    '<body><div class="f002">' + buildDocHTML(false) + '</div></body></html>';
 }
 
 function f002FileName(ext) {
@@ -1194,11 +1207,20 @@ function f002FileName(ext) {
 
 function f002Save(content, filename, mime) {
   var blob = new Blob(["\ufeff", content], { type: mime });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement("a");
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  var file = null;
+  try { file = new File([blob], filename, { type: mime }); } catch (e) {}
+  if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+    navigator.share({ files: [file], title: filename }).catch(function () { fallbackDownload(); });
+    return;
+  }
+  fallbackDownload();
+  function fallbackDownload() {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = filename; a.target = "_blank"; a.rel = "noopener";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  }
 }
 
 /* ===================== SỰ KIỆN BIÊN BẢN ===================== */
@@ -1209,7 +1231,7 @@ function closeDoc() {
   document.body.classList.remove("doc-open");
 }
 document.getElementById("bb-preview").onclick = function () {
-  document.getElementById("docOut").innerHTML = '<div class="f002">' + buildDocHTML() + '</div>';
+  document.getElementById("docOut").innerHTML = '<div class="f002">' + buildDocHTML(true) + '</div>';
   document.getElementById("sheetBB").hidden = true;
   document.getElementById("sheetDoc").hidden = false;
   document.body.classList.add("doc-open");
@@ -1247,7 +1269,7 @@ document.getElementById("doc-download").onclick = function () {
     '<w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->' +
     '<style>@page WordSection1{size:21cm 29.7cm;mso-page-orientation:portrait;' +
     'margin:1.2cm 1.4cm 1cm 1.6cm}div.WordSection1{page:WordSection1}' + f002Css() + '</style></head>' +
-    '<body><div class="WordSection1"><div class="f002">' + buildDocHTML() + '</div></div></body></html>';
+    '<body><div class="WordSection1"><div class="f002">' + buildDocHTML(true) + '</div></div></body></html>';
   f002Save(html, f002FileName(".doc"), "application/msword");
 };
 
