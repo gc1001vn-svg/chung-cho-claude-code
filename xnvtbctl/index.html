@@ -156,12 +156,11 @@ body.modal-open{position:fixed;left:0;right:0;overflow:hidden}
 .doc{background:#fff}
 .f002{font-family:"Times New Roman",Times,serif;font-size:13pt;line-height:1.1;color:#000}
 .f002 .page{background:#fff;max-width:100%;width:180mm;margin:0 auto 8mm}
-.f002 table.g{table-layout:fixed}
-.f002 table.g th,.f002 table.g td{word-break:break-word;overflow-wrap:break-word}
 @media screen and (max-width:700px){
   .f002 .page{width:100%}
   .f002{font-size:11.5pt}
-  .f002 table.g th,.f002 table.g td{font-size:10.5pt}
+  .f002 table.g{table-layout:fixed}
+  .f002 table.g th,.f002 table.g td{word-break:break-word;overflow-wrap:break-word;font-size:10.5pt}
   .f002 .hdr,.f002 .gd{table-layout:fixed;width:100%}
 }
 .f002-photo{margin-top:5pt;text-align:center}
@@ -200,6 +199,16 @@ body.modal-open{position:fixed;left:0;right:0;overflow:hidden}
 .f002 table.ft td{border:0;padding:2pt 0 0;font-style:italic;font-size:11.5pt}
 .f002 table.ft td.ct{text-align:center}
 .f002 table.ft td.rt{text-align:right}
+
+/* ---- iOS Safari tự phóng to khi ô nhập có cỡ chữ < 16px VÀ KHÔNG tự thu lại.
+   Ép mọi ô nhập tối thiểu 16px để màn hình không bị phóng to kẹt lại. ---- */
+.meta input,
+.note,
+.bb-field input, .bb-field select, .bb-field textarea,
+.doan-row input,
+.vp-row textarea, .vp-two input, .vp-lsr{font-size:16px}
+.vp-two input::placeholder{font-size:13px}
+.radio-opt{font-size:16px}
 
 @media print{
   @page{size:A4 portrait;margin:12mm 14mm 10mm 16mm}
@@ -308,7 +317,7 @@ body.modal-open{position:fixed;left:0;right:0;overflow:hidden}
   <div class="sheet-in">
     <div id="docOut" class="doc"></div>
     <div class="sheet-act">
-      <button id="doc-download" class="acc">⬇ Tải Word (.doc)</button>
+      <button id="doc-download" class="acc">⬇ Tải Word (.docx)</button>
       <button id="doc-print">🖨 In / Lưu PDF</button>
       <button id="doc-back">◀ Sửa lại</button>
       <button id="doc-close" class="p">Đóng</button>
@@ -1237,8 +1246,7 @@ function f002FileName(ext) {
   return "F-002_BB-kiem-tra_" + nt + "_" + so + "_" + ng + ext;
 }
 
-function f002Save(content, filename, mime) {
-  var blob = new Blob(["\ufeff", content], { type: mime });
+function f002SaveBlob(blob, filename, mime) {
   var file = null;
   try { file = new File([blob], filename, { type: mime }); } catch (e) {}
   if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -1253,6 +1261,455 @@ function f002Save(content, filename, mime) {
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
   }
+}
+function f002Save(content, filename, mime) {
+  f002SaveBlob(new Blob(["\ufeff", content], { type: mime }), filename, mime);
+}
+
+/* ===================== XU\u1ea4T FILE WORD TH\u1eacT (.docx) =====================
+   File .doc tr\u01b0\u1edbc \u0111\u00e2y ch\u1ec9 l\u00e0 HTML \u0111\u1ed5i \u0111u\u00f4i n\u00ean Word tr\u00ean iPhone/iPad t\u1eeb ch\u1ed1i m\u1edf
+   (hi\u1ec7n khung x\u00e1m r\u1ed3i v\u0103ng ra). Ph\u1ea7n d\u01b0\u1edbi \u0111\u00f3ng g\u00f3i \u0111\u00fang chu\u1ea9n Office Open XML:
+   .docx = m\u1ed9t file ZIP ch\u1ee9a c\u00e1c ph\u1ea7n XML + \u1ea3nh. */
+
+var DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+var DX_XMLDECL = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n';
+var DX_NS =
+  ' xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"' +
+  ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"' +
+  ' xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"' +
+  ' xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"' +
+  ' xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"';
+var DX_FONT = "Times New Roman";
+var DX_CW = 10205;   /* b\u1ec1 r\u1ed9ng v\u00f9ng in tr\u00ean kh\u1ed5 A4 (twips) */
+var EMU_CM = 360000, EMU_PX = 9525;
+
+/* ---- ZIP (ch\u1ec9 l\u01b0u, kh\u00f4ng n\u00e9n) ---- */
+var _crcT = (function () {
+  var t = new Uint32Array(256), c, n, k;
+  for (n = 0; n < 256; n++) {
+    c = n;
+    for (k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function _crc32(u8) {
+  var c = 0xFFFFFFFF;
+  for (var i = 0; i < u8.length; i++) c = _crcT[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function _enc(s) { return new TextEncoder().encode(s); }
+function _dataUrlBytes(u) {
+  var bin = atob(u.substring(u.indexOf(",") + 1));
+  var out = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+function _zipStore(files) {
+  var parts = [], cdir = [], off = 0;
+  function w16(v) { return [v & 255, (v >>> 8) & 255]; }
+  function w32(v) { return [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255]; }
+  files.forEach(function (f) {
+    var nm = _enc(f.name), d = f.data, crc = _crc32(d);
+    parts.push(new Uint8Array([].concat([80, 75, 3, 4], w16(20), w16(0), w16(0), w16(0), w16(0),
+      w32(crc), w32(d.length), w32(d.length), w16(nm.length), w16(0))), nm, d);
+    cdir.push(new Uint8Array([].concat([80, 75, 1, 2], w16(20), w16(20), w16(0), w16(0), w16(0), w16(0),
+      w32(crc), w32(d.length), w32(d.length), w16(nm.length), w16(0), w16(0), w16(0), w16(0),
+      w32(0), w32(off))), nm);
+    off += 30 + nm.length + d.length;
+  });
+  var cdSize = cdir.reduce(function (s, a) { return s + a.length; }, 0);
+  var all = parts.concat(cdir, [new Uint8Array([].concat([80, 75, 5, 6], w16(0), w16(0),
+    w16(files.length), w16(files.length), w32(cdSize), w32(off), w16(0)))]);
+  var tot = all.reduce(function (s, a) { return s + a.length; }, 0);
+  var out = new Uint8Array(tot), p = 0;
+  all.forEach(function (a) { out.set(a, p); p += a.length; });
+  return out;
+}
+/* \u0110\u1ecdc k\u00edch th\u01b0\u1edbc \u1ea3nh tr\u1ef1c ti\u1ebfp t\u1eeb header PNG/JPEG (kh\u00f4ng c\u1ea7n gi\u1ea3i m\u00e3 \u1ea3nh) */
+function _imgSize(b) {
+  if (b.length > 24 && b[0] === 0x89 && b[1] === 0x50)
+    return { w: ((b[16] << 24 | b[17] << 16 | b[18] << 8 | b[19]) >>> 0),
+             h: ((b[20] << 24 | b[21] << 16 | b[22] << 8 | b[23]) >>> 0) };
+  if (b[0] === 0xFF && b[1] === 0xD8) {
+    var i = 2;
+    while (i < b.length - 9) {
+      if (b[i] !== 0xFF) { i++; continue; }
+      var m = b[i + 1];
+      if (m >= 0xC0 && m <= 0xCF && m !== 0xC4 && m !== 0xC8 && m !== 0xCC)
+        return { h: (b[i + 5] << 8) | b[i + 6], w: (b[i + 7] << 8) | b[i + 8] };
+      i += 2 + ((b[i + 2] << 8) | b[i + 3]);
+    }
+  }
+  return { w: 4, h: 3 };
+}
+function _xe(s) {
+  return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+/* ---- Kh\u1ed1i d\u1ef1ng WordprocessingML ---- */
+function dxRun(text, o) {
+  o = o || {};
+  var f = o.font || DX_FONT, sz = o.sz || 26;
+  return '<w:r><w:rPr><w:rFonts w:ascii="' + f + '" w:hAnsi="' + f + '" w:cs="' + f + '"/>' +
+    (o.b ? "<w:b/>" : "") + (o.i ? "<w:i/>" : "") + (o.u ? '<w:u w:val="single"/>' : "") +
+    '<w:sz w:val="' + sz + '"/><w:szCs w:val="' + sz + '"/></w:rPr>' +
+    '<w:t xml:space="preserve">' + _xe(text) + "</w:t></w:r>";
+}
+function dxBr() { return "<w:r><w:br/></w:r>"; }
+function dxPara(runs, o) {
+  o = o || {};
+  return "<w:p><w:pPr>" +
+    (o.brk ? "<w:pageBreakBefore/>" : "") +
+    (o.align ? '<w:jc w:val="' + o.align + '"/>' : "") +
+    (o.ind ? '<w:ind w:left="' + o.ind + '"/>' : "") +
+    '<w:spacing w:before="' + (o.before || 0) + '" w:after="' +
+      (o.after == null ? 40 : o.after) + '" w:line="240" w:lineRule="auto"/>' +
+    "</w:pPr>" + (runs || "") + "</w:p>";
+}
+function dxField(instr, o) {
+  return '<w:r><w:fldChar w:fldCharType="begin"/></w:r>' +
+    '<w:r><w:instrText xml:space="preserve"> ' + instr + ' </w:instrText></w:r>' +
+    '<w:r><w:fldChar w:fldCharType="separate"/></w:r>' + dxRun("1", o) +
+    '<w:r><w:fldChar w:fldCharType="end"/></w:r>';
+}
+function _dxBorders(mode) {
+  var sides = ["top", "left", "bottom", "right", "insideH", "insideV"];
+  return "<w:tblBorders>" + sides.map(function (s) {
+    var on = mode === "full" || (mode === "top" && s === "top");
+    return on
+      ? '<w:' + s + ' w:val="single" w:sz="8" w:space="0" w:color="000000"/>'
+      : '<w:' + s + ' w:val="none" w:sz="0" w:space="0" w:color="auto"/>';
+  }).join("") + "</w:tblBorders>";
+}
+function dxCell(w, content, o) {
+  o = o || {};
+  return '<w:tc><w:tcPr><w:tcW w:w="' + w + '" w:type="dxa"/>' +
+    (o.vAlign ? '<w:vAlign w:val="' + o.vAlign + '"/>' : "") + "</w:tcPr>" +
+    (content || "<w:p/>") + "</w:tc>";
+}
+function dxRow(cells, h) {
+  return "<w:tr>" +
+    (h ? '<w:trPr><w:trHeight w:hRule="atLeast" w:val="' + h + '"/></w:trPr>' : "") +
+    cells + "</w:tr>";
+}
+function dxTable(grid, rows, mode) {
+  var total = grid.reduce(function (a, b) { return a + b; }, 0);
+  return '<w:tbl><w:tblPr><w:tblW w:w="' + total + '" w:type="dxa"/>' +
+    '<w:tblLayout w:type="fixed"/>' + _dxBorders(mode || "full") +
+    '<w:tblCellMar><w:top w:w="30" w:type="dxa"/><w:left w:w="70" w:type="dxa"/>' +
+    '<w:bottom w:w="30" w:type="dxa"/><w:right w:w="70" w:type="dxa"/></w:tblCellMar>' +
+    "</w:tblPr><w:tblGrid>" +
+    grid.map(function (g) { return '<w:gridCol w:w="' + g + '"/>'; }).join("") +
+    "</w:tblGrid>" + rows + "</w:tbl>";
+}
+function dxImage(rid, cx, cy, id) {
+  return '<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">' +
+    '<wp:extent cx="' + cx + '" cy="' + cy + '"/><wp:effectExtent l="0" t="0" r="0" b="0"/>' +
+    '<wp:docPr id="' + id + '" name="Anh' + id + '"/>' +
+    '<wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>' +
+    '<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
+    "<pic:pic><pic:nvPicPr><pic:cNvPr id=\"" + id + "\" name=\"Anh" + id + "\"/><pic:cNvPicPr/></pic:nvPicPr>" +
+    '<pic:blipFill><a:blip r:embed="' + rid + '"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
+    '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + cx + '" cy="' + cy + '"/></a:xfrm>' +
+    '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic>' +
+    "</a:graphicData></a:graphic></wp:inline></w:drawing></w:r>";
+}
+function dxFld(v, n) {
+  v = (v == null ? "" : String(v)).trim();
+  return v ? v : dots(n);
+}
+
+function buildDocxBytes(withPhotos) {
+  var media = [];                 /* c\u00e1c ph\u1ea7n \u1ea3nh d\u00f9ng chung trong ZIP */
+  var docRels = [], docRid = 4;   /* rId1 styles, rId2 header, rId3 footer */
+  var imgId = 100;
+  function addDocImage(dataUrl) {
+    var bytes = _dataUrlBytes(dataUrl);
+    var png = bytes[0] === 0x89;
+    var name = "image" + (media.length + 1) + (png ? ".png" : ".jpeg");
+    media.push({ name: "word/media/" + name, data: bytes });
+    var id = "rId" + (docRid++);
+    docRels.push('<Relationship Id="' + id + '" Type="http://schemas.openxmlformats.org/' +
+      'officeDocument/2006/relationships/image" Target="media/' + name + '"/>');
+    return { id: id, size: _imgSize(bytes) };
+  }
+  function fitEmu(size, maxCmW, maxCmH) {
+    var cx = size.w * EMU_PX, cy = size.h * EMU_PX;
+    var k = Math.min(maxCmW * EMU_CM / cx, maxCmH * EMU_CM / cy, 1);
+    return { cx: Math.max(1, Math.round(cx * k)), cy: Math.max(1, Math.round(cy * k)) };
+  }
+
+  var doanRows = bb.doan.filter(function (p) { return (p.ten || "").trim() || (p.chuc || "").trim(); });
+  var vpRows = bb.viPham.filter(function (r) { return (r.noidung || "").trim(); });
+  var kcRows = bb.khuyenCao.filter(function (r) { return (r.noidung || "").trim() || (r.dexuat || "").trim(); });
+  var GD = bb.giaidoan;
+  function box(k) { return GD === k ? "\u2612" : "\u2610"; }
+
+  var b = "";
+
+  /* ---------- TRANG 1 ---------- */
+  b += dxPara(dxRun("Ph\u1ee5 l\u1ee5c VSP-000-ATMT-448/ F-002", { i: true, sz: 23 }) + dxBr() +
+    dxRun("(Theo m.5.2.1.4; 5.3.1.3-c; 5.3.1.9)", { i: true, sz: 23 }), { align: "right", after: 60 });
+  b += dxPara(dxRun("BI\u00caN B\u1ea2N KI\u1ec2M TRA T\u00ccNH TR\u1ea0NG ATSKMT NH\u00c0 TH\u1ea6U", { b: true }) + dxBr() +
+    dxRun("\u0410\u041a\u0422 \u041f\u0420\u041e\u0412\u0415\u0420\u041a\u0418 \u0421\u041e\u0421\u0422\u041e\u042f\u041d\u0418\u042f \u041f\u041e\u0414\u0420\u042f\u0414\u0427\u0418\u041a\u0410 \u0412 \u041e\u0411\u041b\u0410\u0421\u0422\u0418 \u0411\u0417\u0438\u041e\u041e\u0421", { b: true }),
+    { align: "center", after: 20 });
+  b += dxPara(dxRun("S\u1ed1 BB / \u2116: " + dxFld(bb.so, 18), { b: true }), { align: "center", after: 100 });
+  b += dxPara(dxRun("T\u00ean Nh\u00e0 th\u1ea7u/ \u041d\u0430\u0438\u043c\u0435\u043d\u043e\u0432\u0430\u043d\u0438\u0435 \u043f\u043e\u0434\u0440\u044f\u0434\u0447\u0438\u043a\u0430: " + dxFld(bb.nhathau, 40)));
+  b += dxPara(dxRun("Th\u1eddi gian ki\u1ec3m tra: T\u1eeb ng\u00e0y " + fmtDate(bb.tuNgay) +
+    "          \u0110\u1ebfn ng\u00e0y " + fmtDate(bb.denNgay)));
+  b += dxPara(dxRun("\u0412\u0440\u0435\u043c\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438: \u0441                    \u0434\u043e"));
+  b += dxTable([1500, 8705], dxRow(
+    dxCell(1500, dxPara(dxRun("Giai \u0111o\u1ea1n:"), { after: 0 }) + dxPara(dxRun("\u041f\u0435\u0440\u0438\u043e\u0434:"), { after: 0 })) +
+    dxCell(8705,
+      dxPara(dxRun(box("duthau") + " \u0110\u00e1nh gi\u00e1 b\u00ean d\u1ef1 th\u1ea7u/ \u041e\u0446\u0435\u043d\u043a\u0430 \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u043e\u0432 \u0442\u0435\u043d\u0434\u0435\u0440\u0430"), { after: 0 }) +
+      dxPara(dxRun(box("chuanbi") + " Chu\u1ea9n b\u1ecb tri\u1ec3n khai h\u1ee3p \u0111\u1ed3ng/ \u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043a\u0430 \u043a \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044e \u043a\u043e\u043d\u0442\u0440\u0430\u043a\u0442\u0430"), { after: 0 }) +
+      dxPara(dxRun(box("thuchien") + " \u0110ang th\u1ef1c hi\u1ec7n h\u1ee3p \u0111\u1ed3ng/ \u0412 \u043f\u0440\u043e\u0446\u0435\u0441\u0441\u0435 \u0438\u0441\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f \u043a\u043e\u043d\u0442\u0440\u0430\u043a\u0442\u0430"), { after: 0 }))
+  ), "none");
+  b += dxPara(dxRun("\u0110\u1ecba \u0111i\u1ec3m/ C\u00f4ng tr\u00ecnh n\u01a1i ki\u1ec3m tra: " + dxFld(bb.diadiem, 30)), { before: 60 });
+  b += dxPara(dxRun("\u041c\u0435\u0441\u0442\u043e \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438/ \u041f\u0440\u043e\u0432\u0435\u0440\u0435\u043d\u043d\u044b\u0439 \u043e\u0431\u044a\u0435\u043a\u0442:"));
+  b += dxPara(dxRun("\u0110\u01a1n v\u1ecb c\u01a1 s\u1edf qu\u1ea3n l\u00fd c\u00f4ng tr\u00ecnh: " + dxFld(bb.donvi, 30)));
+  b += dxPara(dxRun("\u041f\u043e\u0434\u0440\u0430\u0437\u0434\u0435\u043b\u0435\u043d\u0438\u0435, \u043e\u0442\u0432\u0435\u0447\u0430\u044e\u0449\u0438\u0435\u0435 \u0437\u0430 \u043e\u0431\u044a\u0435\u043a\u0442:"));
+  b += dxPara(dxRun("1. Th\u00e0nh ph\u1ea7n \u0111o\u00e0n ki\u1ec3m tra g\u1ed3m/ \u0421\u043e\u0441\u0442\u0430\u0432 \u043a\u043e\u043c\u0438\u0441\u0441\u0438\u0438 \u043f\u043e \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0435 \u043f\u043e\u0434\u0440\u044f\u0434\u0447\u0438\u043a\u0430:"),
+    { before: 60, after: 60 });
+
+  var G1 = [816, 3062, 4082, 2245];
+  function th(txt1, txt2, w) {
+    return dxCell(w, dxPara(dxRun(txt1, { b: true, sz: 24 }) + dxBr() + dxRun(txt2, { b: true, sz: 24 }),
+      { align: "center", after: 0 }), { vAlign: "center" });
+  }
+  var rowsD = dxRow(th("STT", "\u041f.\u043f.", G1[0]) + th("H\u1ecd v\u00e0 t\u00ean", "\u0424.\u0418.\u041e.", G1[1]) +
+    th("Ch\u1ee9c v\u1ee5", "\u0414\u043e\u043b\u0436\u043d\u043e\u0441\u0442\u044c", G1[2]) + th("\u0110\u01a1n v\u1ecb", "\u041f\u043e\u0434\u0440\u0430\u0437\u0434\u0435\u043b\u0435\u043d\u0438\u0435", G1[3]));
+  var nD = Math.max(doanRows.length, 6);
+  for (var a1 = 0; a1 < nD; a1++) {
+    var p1 = doanRows[a1] || {};
+    rowsD += dxRow(
+      dxCell(G1[0], dxPara(dxRun(String(a1 + 1), { sz: 24 }), { align: "center", after: 0 })) +
+      dxCell(G1[1], dxPara(dxRun(p1.ten || "", { sz: 24 }), { after: 0 })) +
+      dxCell(G1[2], dxPara(dxRun(p1.chuc || "", { sz: 24 }), { after: 0 })) +
+      dxCell(G1[3], dxPara(dxRun(p1.donvi || "", { sz: 24 }), { after: 0 })), 300);
+  }
+  b += dxTable(G1, rowsD) + dxPara("", { after: 60 });
+
+  b += dxPara(dxRun("2. C\u01a1 s\u1edf \u0111\u1ec3 ti\u1ebfn h\u00e0nh ki\u1ec3m tra: (Theo quy\u1ebft \u0111\u1ecbnh, ch\u1ec9 th\u1ecb, ki\u1ec3m tra \u0111\u1ecbnh k\u1ef3, " +
+    "\u0111\u1ed9t xu\u1ea5t...)/ \u041e\u0441\u043d\u043e\u0432\u0430\u043d\u0438\u0435 \u0434\u043b\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438: (\u0421\u043e\u0433\u043b\u0430\u0441\u043d\u043e \u043f\u0440\u0438\u043a\u0430\u0437\u0443, \u0440\u0430\u0441\u043f\u043e\u0440\u044f\u0436\u0435\u043d\u0438\u044e, \u043f\u0435\u0440\u0438\u043e\u0434\u0438\u0447\u0435\u0441\u043a\u0438\u043c \u0438 " +
+    "\u0432\u043d\u0435\u043e\u0447\u0435\u0440\u0435\u0434\u043d\u044b\u043c \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430\u043c...) " + ((bb.coso || "").trim() ? bb.coso.replace(/\n/g, " ") : dots(58))),
+    { align: "both" });
+  if (!(bb.coso || "").trim()) b += dxPara(dxRun(dots(92)));
+  b += dxPara(dxRun("- C\u0103n c\u1ee9 v\u00e0o c\u00e1c t\u00e0i li\u1ec7u quy ph\u1ea1m, quy tr\u00ecnh, h\u01b0\u1edbng d\u1eabn, ti\u00eau chu\u1ea9n v\u00e0 c\u00e1c t\u00e0i li\u1ec7u " +
+    "kh\u00e1c v\u1ec1 ATSKMT \u0111ang c\u00f3 hi\u1ec7u l\u1ef1c t\u1ea1i LD Vi\u1ec7t-Nga Vietsovpetro / \u041d\u0430 \u043e\u0441\u043d\u043e\u0432\u0430\u043d\u0438\u0438 \u043d\u043e\u0440\u043c\u0430\u0442\u0438\u0432\u043d\u044b\u0445 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432, " +
+    "\u043f\u0440\u043e\u0446\u0435\u0434\u0443\u0440, \u0438\u043d\u0441\u0442\u0440\u0443\u043a\u0446\u0438\u0439, \u0441\u0442\u0430\u043d\u0434\u0430\u0440\u0442\u043e\u0432 \u0438 \u0434\u0440\u0443\u0433\u0438\u0445 \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u044e\u0449\u0438\u0445 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432 \u0432 \u043e\u0431\u043b\u0430\u0441\u0442\u0438 \u0411\u0417\u0438\u041e\u041e\u0421 \u0421\u041f \u00ab\u0412\u044c\u0435\u0442\u0441\u043e\u0432\u043f\u0435\u0442\u0440\u043e\u00bb;"),
+    { align: "both" });
+  b += dxPara(dxRun("- C\u0103n c\u1ee9 v\u00e0o c\u00e1c vi ph\u1ea1m/ s\u1ef1 kh\u00f4ng ph\u00f9 h\u1ee3p \u0111\u00e3 \u0111\u01b0\u1ee3c ph\u00e1t hi\u1ec7n t\u1ea1i th\u1eddi \u0111i\u1ec3m ki\u1ec3m tra / " +
+    "\u041d\u0430 \u043e\u0441\u043d\u043e\u0432\u0430\u043d\u0438\u0438 \u043d\u0430\u0440\u0443\u0448\u0435\u043d\u0438\u0439 / \u043d\u0435\u0441\u043e\u043e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0438\u0439, \u043a\u043e\u0442\u043e\u0440\u044b\u0435 \u0431\u044b\u043b\u0438 \u043e\u0431\u043d\u0430\u0440\u0443\u0436\u0435\u043d\u044b \u0432\u043e \u0432\u0440\u0435\u043c\u044f \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438."), { align: "both" });
+  b += dxPara(dxRun("3. \u0110o\u00e0n ki\u1ec3m tra y\u00eau c\u1ea7u L\u00e3nh \u0111\u1ea1o nh\u00e0 th\u1ea7u, \u0111\u1ea1i di\u1ec7n nh\u00e0 th\u1ea7u tr\u00ean c\u00f4ng tr\u00ecnh kh\u1eafc ph\u1ee5c " +
+    "c\u00e1c vi ph\u1ea1m/ s\u1ef1 kh\u00f4ng ph\u00f9 h\u1ee3p d\u01b0\u1edbi \u0111\u00e2y (2) v\u00e0 g\u1eedi k\u1ebft qu\u1ea3 kh\u1eafc ph\u1ee5c b\u1eb1ng v\u0103n b\u1ea3n theo \u0111\u00fang th\u1eddi h\u1ea1n " +
+    "ho\u00e0n th\u00e0nh (3) v\u1ec1 \u0111\u1ecba ch\u1ec9:"), { align: "both" });
+  b += dxPara(dxRun("+ Tr\u01b0\u1edfng \u0111o\u00e0n ki\u1ec3m tra: \u00d4ng (b\u00e0) " + dxFld(bb.truongdoan, 30)));
+  b += dxPara(dxRun("+ Ph\u00f2ng ATSKMT LD Vi\u1ec7t-Nga Vietsovpetro. \u0110\u1ecba ch\u1ec9 105 L\u00ea L\u1ee3i ph\u01b0\u1eddng Th\u1eafng Nh\u00ec, " +
+    "Tp V\u0169ng T\u00e0u."), { align: "both" });
+
+  /* ---------- TRANG 2 ---------- */
+  b += dxPara(dxRun("- \u041a\u043e\u043c\u0438\u0441\u0441\u0438\u044f \u043f\u043e\u0442\u0440\u0435\u0431\u043e\u0432\u0430\u043b\u0430 \u0440\u0443\u043a\u043e\u0432\u043e\u0434\u0438\u0442\u0435\u043b\u044f \u043f\u043e\u0434\u0440\u044f\u0434\u0447\u0438\u043a\u0430, \u043f\u0440\u0435\u0434\u0441\u0442\u0430\u0432\u0438\u0442\u0435\u043b\u044f \u043f\u043e\u0434\u0440\u044f\u0434\u0447\u0438\u043a\u0430 \u043d\u0430 \u043e\u0431\u044a\u0435\u043a\u0442\u0435 " +
+    "\u0443\u0441\u0442\u0440\u0430\u043d\u0438\u0442\u044c \u043d\u0430\u0440\u0443\u0448\u0435\u043d\u0438\u044f/\u043d\u0435\u0441\u043e\u043e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0438\u044f, \u0443\u043a\u0430\u0437\u0430\u043d\u043d\u044b\u0435 \u043d\u0438\u0436\u0435 (2), \u0438 \u043d\u0430\u043f\u0440\u0430\u0432\u0438\u0442\u044c \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u044b \u0432 \u043f\u0438\u0441\u044c\u043c\u0435\u043d\u043d\u043e\u043c \u0432\u0438\u0434\u0435 " +
+    "\u0432 \u0443\u043a\u0430\u0437\u0430\u043d\u043d\u044b\u0435 \u0441\u0440\u043e\u043a\u0438 (3) \u043f\u043e \u0430\u0434\u0440\u0435\u0441\u0443:"), { brk: true, align: "both" });
+  b += dxPara(dxRun("+\u0420\u0443\u043a\u043e\u0432\u043e\u0434\u0438\u0442\u0435\u043b\u044c \u043a\u043e\u043c\u0438\u0441\u0441\u0438\u0438: \u0433-\u043d (\u0433-\u0436\u0430) " + dxFld(bb.truongdoan, 30)));
+  b += dxPara(dxRun("+\u041e\u0411\u0417\u0438\u041e\u0421 \u0421\u041f \u00ab\u0412\u044c\u0435\u0442\u0441\u043e\u0432\u043f\u0435\u0442\u0440\u043e\u00bb. \u0410\u0434\u0440\u0435\u0441: 105 \u0443\u043b. \u041b\u0435\u043b\u043e\u0439, \u0440\u0430\u0439\u043e\u043d \u0422\u0445\u0430\u043d\u0433\u043d\u0438, \u0433.\u0412\u0443\u043d\u0433\u0442\u0430\u0443."),
+    { after: 80 });
+
+  var G2 = [714, 5409, 2041, 2041];
+  var rowsV = dxRow(
+    dxCell(G2[0], dxPara(dxRun("\u2116", { b: true, sz: 24 }), { align: "center", after: 0 }), { vAlign: "center" }) +
+    dxCell(G2[1], dxPara(dxRun("C\u00e1c vi ph\u1ea1m / \u0111i\u1ec3m ch\u01b0a ph\u00f9 h\u1ee3p c\u1ea7n kh\u1eafc ph\u1ee5c \u2013 T\u00e0i li\u1ec7u li\u00ean quan",
+      { b: true, sz: 24 }) + dxBr() + dxRun("\u041d\u0430\u0440\u0443\u0448\u0435\u043d\u0438\u044f/ \u043d\u0435\u0441\u043e\u043e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0438\u044f - \u0441\u043e\u043e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0443\u044e\u0449\u0438\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b",
+      { b: true, sz: 24 }), { align: "center", after: 0 }), { vAlign: "center" }) +
+    dxCell(G2[2], dxPara(dxRun("Th\u1eddi h\u1ea1n ho\u00e0n th\u00e0nh", { b: true, sz: 24 }) + dxBr() +
+      dxRun("\u0421\u0440\u043e\u043a \u0438\u0441\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f", { b: true, sz: 24 }), { align: "center", after: 0 }), { vAlign: "center" }) +
+    dxCell(G2[3], dxPara(dxRun("Tr\u00e1ch nhi\u1ec7m th\u1ef1c hi\u1ec7n", { b: true, sz: 24 }) + dxBr() +
+      dxRun("\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439 \u0437\u0430 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435", { b: true, sz: 24 }), { align: "center", after: 0 }), { vAlign: "center" })
+  );
+  rowsV += dxRow(["(1)", "(2)", "(3)", "(4)"].map(function (t, i) {
+    return dxCell(G2[i], dxPara(dxRun(t, { sz: 24 }), { align: "center", after: 0 }));
+  }).join(""));
+  var nV = Math.max(vpRows.length, 3);
+  for (var b2 = 0; b2 < nV; b2++) {
+    var r1 = vpRows[b2];
+    var cellC = "";
+    if (r1) {
+      var lines = String(r1.noidung || "").split("\n");
+      lines.forEach(function (ln, li) {
+        var runs = (li === 0 && r1.lsr ? dxRun("[" + r1.lsr + "] ", { b: true, sz: 24 }) : "") +
+          dxRun(ln, { sz: 24 });
+        cellC += dxPara(runs, { after: 0 });
+      });
+      if (withPhotos && r1.photo) {
+        var im = addDocImage(r1.photo), fit = fitEmu(im.size, 5.6, 3.2);
+        cellC += dxPara(dxImage(im.id, fit.cx, fit.cy, imgId++), { align: "center", before: 40, after: 0 });
+        cellC += dxPara(dxRun("\u1ea2nh b\u1eb1ng ch\u1ee9ng", { i: true, sz: 18 }), { align: "center", after: 0 });
+      }
+    } else if (b2 === 0 && !vpRows.length) {
+      cellC = dxPara(dxRun("Kh\u00f4ng ph\u00e1t hi\u1ec7n / \u041d\u0435 \u043e\u0431\u043d\u0430\u0440\u0443\u0436\u0435\u043d\u043e", { sz: 24 }), { after: 0 });
+    }
+    rowsV += dxRow(
+      dxCell(G2[0], dxPara(dxRun(String(b2 + 1), { sz: 24 }), { align: "center", after: 0 })) +
+      dxCell(G2[1], cellC) +
+      dxCell(G2[2], dxPara(dxRun(r1 ? (r1.thoihan || "") : "", { sz: 24 }), { align: "center", after: 0 })) +
+      dxCell(G2[3], dxPara(dxRun(r1 ? (r1.trachnhiem || "") : "", { sz: 24 }), { align: "center", after: 0 })), 560);
+  }
+  b += dxTable(G2, rowsV) + dxPara("", { after: 80 });
+
+  var G3 = [714, 4694, 4797];
+  var rowsK = dxRow(
+    dxCell(G3[0], dxPara(dxRun("\u2116", { b: true, sz: 24 }), { align: "center", after: 0 }), { vAlign: "center" }) +
+    dxCell(G3[1], dxPara(dxRun("C\u00e1c khuy\u1ebfn c\u00e1o (n\u1ebfu c\u00f3)", { b: true, sz: 24 }) + dxBr() +
+      dxRun("\u0420\u0435\u043a\u043e\u043c\u0435\u043d\u0434\u0430\u0446\u0438\u0438 (\u043f\u0440\u0438 \u043d\u0430\u043b\u0438\u0447\u0438\u0438)", { b: true, sz: 24 }), { align: "center", after: 0 }), { vAlign: "center" }) +
+    dxCell(G3[2], dxPara(dxRun("\u0110\u1ec1 xu\u1ea5t \u2013 ki\u1ebfn ngh\u1ecb- \u041f\u0440\u0435\u0434\u043b\u043e\u0436\u0435\u043d\u0438\u044f", { b: true, sz: 24 }),
+      { align: "center", after: 0 }), { vAlign: "center" })
+  );
+  var nK = Math.max(kcRows.length, 3);
+  for (var c2 = 0; c2 < nK; c2++) {
+    var r2 = kcRows[c2] || {};
+    rowsK += dxRow(
+      dxCell(G3[0], dxPara(dxRun(String(c2 + 1), { sz: 24 }), { align: "center", after: 0 })) +
+      dxCell(G3[1], dxPara(dxRun((r2.noidung || "").replace(/\n/g, " "), { sz: 24 }), { after: 0 })) +
+      dxCell(G3[2], dxPara(dxRun((r2.dexuat || "").replace(/\n/g, " "), { sz: 24 }), { after: 0 })), 560);
+  }
+  b += dxTable(G3, rowsK);
+
+  /* ---------- TRANG 3 ---------- */
+  b += dxPara(dxRun("*L\u01b0u \u00fd: -N\u1ebfu kh\u00f4ng ph\u00e1t hi\u1ec7n vi ph\u1ea1m, c\u1ea7n ghi r\u00f5: \u201cKh\u00f4ng ph\u00e1t hi\u1ec7n\u201d",
+    { i: true, sz: 24 }), { brk: true, after: 0 });
+  b += dxPara(dxRun("- C\u00e1c b\u00e1o c\u00e1o kh\u1eafc ph\u1ee5c, d\u1eabn ch\u1ee9ng \u0111\u00e3 kh\u1eafc ph\u1ee5c vi ph\u1ea1m\u2026c\u1ea7n \u0111\u01b0\u1ee3c \u0111\u00ednh k\u00e8m BB n\u00e0y " +
+    "v\u00e0 l\u01b0u t\u1ea1i c\u00f4ng tr\u00ecnh.", { i: true, sz: 24 }), { ind: 800, after: 60 });
+  b += dxPara(dxRun("* \u041f\u0440\u0438\u043c\u0435\u0447\u0430\u043d\u0438\u0435:", { i: true, sz: 24 }), { after: 0 });
+  b += dxPara(dxRun("- \u0415\u0441\u043b\u0438 \u043d\u0430\u0440\u0443\u0448\u0435\u043d\u0438\u0439 \u043d\u0435 \u043e\u0431\u043d\u0430\u0440\u0443\u0436\u0435\u043d\u043e, \u043d\u0443\u0436\u043d\u043e \u0443\u043a\u0430\u0437\u0430\u0442\u044c: \"\u041d\u0435 \u043e\u0431\u043d\u0430\u0440\u0443\u0436\u0435\u043d\u043e\".",
+    { i: true, sz: 24 }), { after: 0 });
+  b += dxPara(dxRun("- \u041e\u0442\u0447\u0435\u0442 \u043e\u0431 \u0443\u0441\u0442\u0440\u0430\u043d\u0435\u043d\u0438\u0438 \u043d\u0430\u0440\u0443\u0448\u0435\u043d\u0438\u0439, \u0434\u043e\u043a\u0430\u0437\u0430\u0442\u0435\u043b\u044c\u0441\u0442\u0432\u0430 \u0443\u0441\u0442\u0440\u0430\u043d\u0435\u043d\u0438\u044f \u043d\u0430\u0440\u0443\u0448\u0435\u043d\u0438\u0439 ... \u0434\u043e\u043b\u0436\u043d\u044b \u0431\u044b\u0442\u044c " +
+    "\u043f\u0440\u0438\u043a\u0440\u0435\u043f\u043b\u0435\u043d\u044b \u043a \u043d\u0430\u0441\u0442\u043e\u044f\u0449\u0435\u043c\u0443 \u0410\u043a\u0442\u0443 \u0438 \u0445\u0440\u0430\u043d\u0438\u0442\u044c\u0441\u044f \u043d\u0430 \u043e\u0431\u044a\u0435\u043a\u0442\u0435.", { i: true, sz: 24 }), { after: 160 });
+
+  var sigLine = "________________,  _________";
+  b += dxPara(dxRun("Tr\u01b0\u1edfng \u0111o\u00e0n ki\u1ec3m tra/ \u0420\u0443\u043a\u043e\u0432\u043e\u0434\u0438\u0442\u0435\u043b\u044c \u043a\u043e\u043c\u0438\u0441\u0441\u0438\u0438", { b: true }), { after: 20 });
+  b += dxPara(dxRun("(ch\u1eef k\u00fd, ghi r\u00f5 h\u1ecd t\u00ean /\u041f\u043e\u0434\u043f\u0438\u0441\u044c \u0438 \u0424.\u0418.\u041e.)", { i: true }) +
+    dxRun("        " + sigLine), { after: 160 });
+  b += dxPara(dxRun("L\u00e3nh \u0111\u1ea1o c\u00f4ng tr\u00ecnh ", { b: true }) +
+    dxRun("(N\u1ebfu ki\u1ec3m tra t\u1ea1i c\u00f4ng tr\u00ecnh)", { i: true }) +
+    dxRun("/ \u0420\u0443\u043a\u043e\u0432\u043e\u0434\u0438\u0442\u0435\u043b\u044c \u043e\u0431\u044a\u0435\u043a\u0442\u0430 ", { b: true }) +
+    dxRun("(\u0435\u0441\u043b\u0438 \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043d\u0430 \u043e\u0431\u044a\u0435\u043a\u0442\u0435)", { i: true }), { after: 20 });
+  b += dxPara(dxRun("(ch\u1eef k\u00fd, ghi r\u00f5 h\u1ecd t\u00ean /\u041f\u043e\u0434\u043f\u0438\u0441\u044c \u0438 \u0424.\u0418.\u041e.)", { i: true }) +
+    dxRun("        " + sigLine), { after: 160 });
+  b += dxPara(dxRun("\u0110\u1ea1i di\u1ec7n nh\u00e0 th\u1ea7u t\u1ea1i c\u00f4ng tr\u00ecnh/ L\u00e3nh \u0111\u1ea1o nh\u00e0 th\u1ea7u", { b: true }), { after: 20 });
+  b += dxPara(dxRun("\u041f\u0440\u0435\u0434\u0441\u0442\u0430\u0432\u0438\u0442\u0435\u043b\u044c \u043f\u043e\u0434\u0440\u044f\u0434\u0447\u0438\u043a\u0430 \u043d\u0430 \u043e\u0431\u044a\u0435\u043a\u0442\u0435/\u0420\u0443\u043a\u043e\u0432\u043e\u0434\u0438\u0442\u0435\u043b\u044c \u043f\u043e\u0434\u0440\u044f\u0434\u0447\u0438\u043a\u0430", { b: true }), { after: 20 });
+  b += dxPara(dxRun("(ch\u1eef k\u00fd, ghi r\u00f5 h\u1ecd t\u00ean /\u041f\u043e\u0434\u043f\u0438\u0441\u044c \u0438 \u0424.\u0418.\u041e.)", { i: true }) +
+    dxRun("        " + sigLine), { after: 200 });
+
+  b += dxPara(dxRun("N\u01a1i nh\u1eadn/ \u0420\u0430\u0441\u0441\u044b\u043b\u043a\u0430:", { i: true, u: true, sz: 23 }), { after: 0 });
+  b += dxPara(dxRun("G\u1eedi v\u1ec1 c\u00e1c \u0111\u1ecba ch\u1ec9 sau \u0111\u00e2y t\u00f9y c\u00e1c giai \u0111o\u1ea1n c\u1ee7a d\u1ef1 \u00e1n / \u041e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c \u043f\u043e \u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u043c " +
+    "\u0430\u0434\u0440\u0435\u0441\u0430\u043c \u0432 \u0437\u0430\u0432\u0438\u0441\u0438\u043c\u043e\u0441\u0442\u0438 \u043e\u0442 \u0444\u0430\u0437\u044b \u043f\u0440\u043e\u0435\u043a\u0442\u0430:", { sz: 23 }), { after: 0 });
+  [
+    "1. Ph\u00f2ng ATSKMT Vietsovpetro / \u041e\u0411\u0417\u0438\u041e\u0421 \u0421\u041f \u00ab\u0412\u044c\u0435\u0442\u0441\u043e\u0432\u043f\u0435\u0442\u0440\u043e\u00bb.",
+    "2. Nh\u00e0 th\u1ea7u/ b\u00ean d\u1ef1 th\u1ea7u / \u041f\u043e\u0434\u0440\u044f\u0434\u0447\u0438\u043a\u0430/ \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u0430 \u0442\u0435\u043d\u0434\u0435\u0440\u0430.",
+    "3. C\u00f4ng tr\u00ecnh n\u01a1i ki\u1ec3m tra / \u041f\u0440\u043e\u0432\u0435\u0440\u0435\u043d\u043d\u044b\u0439 \u043e\u0431\u044a\u0435\u043a\u0442.",
+    "4. B\u1ed9 ph\u1eadn l\u1ef1a ch\u1ecdn nh\u00e0 th\u1ea7u / \u041f\u043e\u0434\u0440\u0430\u0437\u0434\u0435\u043b\u0435\u043d\u0438\u0435, \u043e\u0442\u0432\u0435\u0447\u0430\u044e\u0449\u0435\u0435 \u0437\u0430 \u0432\u044b\u0431\u043e\u0440 \u043f\u043e\u0434\u0440\u044f\u0434\u0447\u0438\u043a\u0430.",
+    "5. \u0110\u01a1n v\u1ecb c\u01a1 s\u1edf qu\u1ea3n l\u00fd c\u00f4ng tr\u00ecnh / \u041f\u043e\u0434\u0440\u0430\u0437\u0434\u0435\u043b\u0435\u043d\u0438\u0435, \u043e\u0442\u0432\u0435\u0447\u0430\u044e\u0449\u0438\u0435\u0435 \u0437\u0430 \u043e\u0431\u044a\u0435\u043a\u0442\u0430\u043c.",
+    "6.Gi\u00e1m s\u00e1t d\u1ef1 \u00e1n c\u1ee7a VSP v\u1ec1 k\u1ef9 thu\u1eadt \u2013 an to\u00e0n/ \u0421\u0443\u043f\u0435\u0440\u0432\u0430\u0439\u0437\u043e\u0440 \u043f\u0440\u043e\u0435\u043a\u0442\u0430 \u0421\u041f \u00ab\u0412\u044c\u0435\u0442\u0441\u043e\u0432\u043f\u0435\u0442\u0440\u043e\u00bb \u043f\u043e \u0442\u0435\u0445\u043d\u0438\u043a\u0435 - \u0431\u0435\u0437\u043e\u043f\u0430\u0441\u043d\u043e\u0441\u0442\u0438."
+  ].forEach(function (t) { b += dxPara(dxRun(t, { sz: 23 }), { ind: 340, after: 0 }); });
+
+  /* ---------- \u0110\u1ea7u trang / ch\u00e2n trang l\u1eb7p l\u1ea1i m\u1ecdi trang ---------- */
+  var hdrRels = [], logoPara;
+  if (F002_LOGO) {
+    var lb = _dataUrlBytes(F002_LOGO), ls = _imgSize(lb);
+    media.push({ name: "word/media/logo.png", data: lb });
+    hdrRels.push('<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/' +
+      'officeDocument/2006/relationships/image" Target="media/logo.png"/>');
+    var lf = fitEmu(ls, 3.6, 1.35);
+    logoPara = dxPara(dxImage("rId1", lf.cx, lf.cy, 1), { align: "center", after: 0 });
+  } else {
+    logoPara = dxPara(dxRun("VIETSOVPETRO", { b: true, sz: 18 }), { align: "center", after: 0 });
+  }
+  var headerXml = DX_XMLDECL + "<w:hdr" + DX_NS + ">" +
+    dxTable([2653, 7552], dxRow(
+      dxCell(2653, logoPara, { vAlign: "center" }) +
+      dxCell(7552, dxPara(dxRun("QUY \u0110\u1ecaNH QU\u1ea2N L\u00dd ATSKMT \u0110\u1ed0I V\u1edaI C\u00c1C NH\u00c0 TH\u1ea6U", { b: true, sz: 21 }) + dxBr() +
+        dxRun("\u041f\u041e\u041b\u041e\u0416\u0415\u041d\u0418\u0415 \u041e\u0411 \u0423\u041f\u0420\u0410\u0412\u041b\u0415\u041d\u0418\u0418 \u0411\u0417\u0438\u041e\u041e\u0421", { b: true, sz: 21 }) + dxBr() +
+        dxRun("\u0414\u041b\u042f \u041f\u041e\u0414\u0420\u042f\u0414\u041d\u042b\u0425 \u041e\u0420\u0413\u0410\u041d\u0418\u0417\u0410\u0426\u0418\u0419", { b: true, sz: 21 }),
+        { align: "center", after: 0 }), { vAlign: "center" })
+    )) +
+    '<w:p><w:pPr><w:spacing w:after="0" w:line="60" w:lineRule="exact"/></w:pPr></w:p></w:hdr>';
+
+  var footerXml = DX_XMLDECL + "<w:ftr" + DX_NS + ">" +
+    dxTable([3402, 3401, 3402], dxRow(
+      dxCell(3402, dxPara(dxRun("VSP-000-ATMT-448/F-002", { i: true, sz: 23 }), { after: 0 })) +
+      dxCell(3401, dxPara(dxRun("Phi\u00ean b\u1ea3n: 06", { i: true, sz: 23 }), { align: "center", after: 0 })) +
+      dxCell(3402, dxPara(dxRun("Trang ", { i: true, sz: 23 }) + dxField("PAGE", { i: true, sz: 23 }) +
+        dxRun(" / ", { i: true, sz: 23 }) + dxField("NUMPAGES", { i: true, sz: 23 }),
+        { align: "right", after: 0 }))
+    ), "top") + "</w:ftr>";
+
+  var sectPr = "<w:sectPr>" +
+    '<w:headerReference w:type="default" r:id="rId2"/>' +
+    '<w:footerReference w:type="default" r:id="rId3"/>' +
+    '<w:pgSz w:w="11906" w:h="16838"/>' +
+    '<w:pgMar w:top="1620" w:right="794" w:bottom="850" w:left="907" ' +
+      'w:header="397" w:footer="340" w:gutter="0"/>' +
+    '<w:cols w:space="708"/><w:docGrid w:linePitch="360"/></w:sectPr>';
+
+  var documentXml = DX_XMLDECL + "<w:document" + DX_NS + "><w:body>" + b + sectPr + "</w:body></w:document>";
+
+  var stylesXml = DX_XMLDECL + "<w:styles" + DX_NS + "><w:docDefaults><w:rPrDefault><w:rPr>" +
+    '<w:rFonts w:ascii="' + DX_FONT + '" w:hAnsi="' + DX_FONT + '" w:cs="' + DX_FONT + '"/>' +
+    '<w:sz w:val="26"/><w:szCs w:val="26"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr>' +
+    '<w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>' +
+    '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/>' +
+    "<w:qFormat/></w:style></w:styles>";
+
+  var ctypes = DX_XMLDECL +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Default Extension="png" ContentType="image/png"/>' +
+    '<Default Extension="jpeg" ContentType="image/jpeg"/>' +
+    '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-' +
+      'officedocument.wordprocessingml.document.main+xml"/>' +
+    '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-' +
+      'officedocument.wordprocessingml.styles+xml"/>' +
+    '<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-' +
+      'officedocument.wordprocessingml.header+xml"/>' +
+    '<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-' +
+      'officedocument.wordprocessingml.footer+xml"/>' +
+    "</Types>";
+
+  var rootRels = DX_XMLDECL +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/' +
+      'relationships/officeDocument" Target="word/document.xml"/></Relationships>';
+
+  var docRelsXml = DX_XMLDECL +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/' +
+      'relationships/styles" Target="styles.xml"/>' +
+    '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/' +
+      'relationships/header" Target="header1.xml"/>' +
+    '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/' +
+      'relationships/footer" Target="footer1.xml"/>' +
+    docRels.join("") + "</Relationships>";
+
+  var hdrRelsXml = DX_XMLDECL +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    hdrRels.join("") + "</Relationships>";
+
+  var files = [
+    { name: "[Content_Types].xml", data: _enc(ctypes) },
+    { name: "_rels/.rels", data: _enc(rootRels) },
+    { name: "word/document.xml", data: _enc(documentXml) },
+    { name: "word/styles.xml", data: _enc(stylesXml) },
+    { name: "word/header1.xml", data: _enc(headerXml) },
+    { name: "word/footer1.xml", data: _enc(footerXml) },
+    { name: "word/_rels/document.xml.rels", data: _enc(docRelsXml) },
+    { name: "word/_rels/header1.xml.rels", data: _enc(hdrRelsXml) }
+  ].concat(media);
+
+  return _zipStore(files);
 }
 
 /* ===================== SỰ KIỆN BIÊN BẢN ===================== */
@@ -1294,17 +1751,23 @@ document.getElementById("doc-print").onclick = function () {
   }
 };
 
-/* Tải Word (.doc) — mở bằng Word đúng khổ A4 để ký, đóng dấu */
+/* Tải Word (.docx) — file Word thật, mở được bằng Word trên iPhone/iPad/máy tính */
 document.getElementById("doc-download").onclick = function () {
-  var html = '<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" ' +
-    'xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
-    '<head><meta charset="utf-8"><title>VSP-000-ATMT-448-F-002</title>' +
-    '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom>' +
-    '<w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->' +
-    '<style>@page WordSection1{size:21cm 29.7cm;mso-page-orientation:portrait;' +
-    'margin:1.2cm 1.4cm 1cm 1.6cm}div.WordSection1{page:WordSection1}' + f002Css() + '</style></head>' +
-    '<body><div class="WordSection1"><div class="f002">' + buildDocHTML(true) + '</div></div></body></html>';
-  f002Save(html, f002FileName(".doc"), "application/msword");
+  try {
+    var bytes = buildDocxBytes(true);
+    f002SaveBlob(new Blob([bytes], { type: DOCX_MIME }), f002FileName(".docx"), DOCX_MIME);
+  } catch (e) {
+    /* Trình duyệt quá cũ (không có TextEncoder/Blob nhị phân) — quay về bản .doc dạng HTML */
+    var html = '<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" ' +
+      'xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
+      '<head><meta charset="utf-8"><title>VSP-000-ATMT-448-F-002</title>' +
+      '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom>' +
+      '<w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->' +
+      '<style>@page WordSection1{size:21cm 29.7cm;mso-page-orientation:portrait;' +
+      'margin:1.2cm 1.4cm 1cm 1.6cm}div.WordSection1{page:WordSection1}' + f002Css() + '</style></head>' +
+      '<body><div class="WordSection1"><div class="f002">' + buildDocHTML(true) + '</div></div></body></html>';
+    f002Save(html, f002FileName(".doc"), "application/msword");
+  }
 };
 
 /* ===================== SỰ KIỆN CHUNG ===================== */
