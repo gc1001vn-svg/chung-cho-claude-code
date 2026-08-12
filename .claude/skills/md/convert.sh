@@ -3,10 +3,20 @@
 # Dung: convert.sh [duong-dan ...] | convert.sh all | convert.sh   (mac dinh: dot upload moi nhat)
 set -uo pipefail
 
-# Goc repo suy ra tu vi tri script (.../.claude/skills/md/) -> khong phu thuoc bien moi truong
-ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
-OUTDIR="$ROOT/.mdcache"
+# Trong repo git thi luu canh repo; ngoai repo thi luu tam -> dung duoc o moi noi
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+OUTDIR="${ROOT:-${TMPDIR:-/tmp}}/.mdcache"
 mkdir -p "$OUTDIR"
+
+# Container co the bi dung lai va mat markitdown -> tu cai lai, khong de lenh chet
+if ! command -v markitdown >/dev/null 2>&1; then
+  echo "Chua co markitdown, dang cai (lan dau, khoang 1 phut)..." >&2
+  pip install --quiet "markitdown[all]" >&2 2>/dev/null \
+    || pip install --quiet --break-system-packages "markitdown[all]" >&2 2>/dev/null
+  command -v markitdown >/dev/null 2>&1 || {
+    echo "Khong cai duoc markitdown. Kiem tra mang cua moi truong." >&2; exit 3; }
+  echo "Da cai xong markitdown." >&2
+fi
 
 # markitdown xu ly duoc; phan con lai bao ro thay vi that bai am tham
 SUPPORTED='pdf|docx|doc|pptx|ppt|xlsx|xls|csv|tsv|html|htm|xml|json|txt|md|epub|rtf|odt|zip|msg|jpg|jpeg|png|gif|bmp|webp|tiff'
