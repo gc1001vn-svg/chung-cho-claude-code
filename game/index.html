@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1a1208">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Con Đường Tơ Lụa">
+<title>Con Đường Tơ Lụa</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+</head>
+<body>
+<canvas id="scene"></canvas>
+
+<!-- ================= LOADING ================= -->
+<div id="loading" class="screen">
+  <div class="logo">CON ĐƯỜNG<span>TƠ LỤA</span></div>
+  <div class="bar"><i id="loadbar"></i></div>
+  <div class="loadtxt" id="loadtxt">Đang khởi tạo thế giới…</div>
+</div>
+
+<!-- ================= MAIN MENU ================= -->
+<div id="menu" class="screen hidden">
+  <div class="logo">CON ĐƯỜNG<span>TƠ LỤA</span></div>
+  <div class="menu-sub">Nhập vai · Chơi offline</div>
+  <div class="menu-btns">
+    <button id="btn-continue" class="big-btn gold hidden">Chơi tiếp</button>
+    <button id="btn-new" class="big-btn">Tạo nhân vật mới</button>
+    <button id="btn-howto" class="big-btn ghost">Hướng dẫn</button>
+  </div>
+  <div class="menu-save" id="menu-save"></div>
+  <div class="ver">v1.0 · lưu tự động trên máy</div>
+</div>
+
+<!-- ================= CHARACTER CREATION ================= -->
+<div id="create" class="screen hidden">
+  <div class="cc-head">
+    <button class="back-btn" id="cc-back">‹</button>
+    <h2 id="cc-title">Chọn chủng tộc</h2>
+  </div>
+  <div class="cc-body" id="cc-body"></div>
+  <div class="cc-foot">
+    <div class="cc-steps"><i class="on"></i><i></i><i></i></div>
+    <button id="cc-next" class="big-btn gold" disabled>Tiếp tục</button>
+  </div>
+</div>
+
+<!-- ================= HUD ================= -->
+<div id="hud" class="hidden">
+  <div id="top-left">
+    <div class="portrait" id="portrait">?</div>
+    <div class="vitals">
+      <div class="nameline"><b id="p-name">—</b><span id="p-lv">Lv.1</span></div>
+      <div class="bar hp"><i id="hp-bar"></i><em id="hp-txt"></em></div>
+      <div class="bar mp"><i id="mp-bar"></i><em id="mp-txt"></em></div>
+      <div class="bar xp"><i id="xp-bar"></i></div>
+    </div>
+  </div>
+
+  <div id="top-right">
+    <div class="gold-chip"><span>💰</span><b id="p-gold">0</b></div>
+    <div class="zone-chip" id="zone-name">Trường An</div>
+    <div class="sysbtns">
+      <button class="ico" data-panel="char">👤</button>
+      <button class="ico" data-panel="bag">🎒<i class="dot hidden" id="bag-dot"></i></button>
+      <button class="ico" data-panel="skill">📕<i class="dot hidden" id="sp-dot"></i></button>
+      <button class="ico" data-panel="quest">📜<i class="dot hidden" id="q-dot"></i></button>
+      <button class="ico" data-panel="job">🐫</button>
+      <button class="ico" data-panel="sys">⚙</button>
+    </div>
+  </div>
+
+  <div id="target-frame" class="hidden">
+    <div class="tname"><b id="t-name"></b><span id="t-lv"></span></div>
+    <div class="bar thp"><i id="t-hp"></i></div>
+  </div>
+
+  <div id="quest-track"></div>
+  <div id="toasts"></div>
+  <div id="dmg-layer"></div>
+  <div id="nameplates"></div>
+
+  <div id="joystick"><i id="stick"></i></div>
+
+  <div id="actions">
+    <button id="btn-attack" class="act atk">⚔</button>
+    <div id="skillbar"></div>
+    <button id="btn-pickup" class="act small">🖐</button>
+    <button id="btn-pot" class="act small pot">🧪<em id="pot-count">0</em></button>
+  </div>
+
+  <div id="interact" class="hidden"><button id="btn-interact"></button></div>
+</div>
+
+<!-- ================= PANEL HOST ================= -->
+<div id="panel" class="hidden">
+  <div class="panel-card">
+    <div class="panel-head"><h3 id="panel-title"></h3><button id="panel-close">✕</button></div>
+    <div class="panel-body" id="panel-body"></div>
+  </div>
+</div>
+
+<div id="dialog" class="hidden">
+  <div class="dlg-card">
+    <div class="dlg-npc" id="dlg-npc">NPC</div>
+    <div class="dlg-text" id="dlg-text"></div>
+    <div class="dlg-opts" id="dlg-opts"></div>
+  </div>
+</div>
+
+<div id="death" class="screen hidden">
+  <div class="dead-title">BẠN ĐÃ GỤC NGÃ</div>
+  <div class="dead-sub" id="dead-sub"></div>
+  <button id="btn-revive" class="big-btn gold">Hồi sinh tại thành</button>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

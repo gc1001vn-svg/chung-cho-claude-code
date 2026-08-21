@@ -17,3 +17,10 @@ python convert.py https://example.com/page.html
 ```
 
 The converted Markdown is printed to stdout.
+
+---
+
+## Con Đường Tơ Lụa (game 3D)
+
+Game nhập vai 3D chơi offline trên điện thoại, lấy cảm hứng từ Silkroad Online —
+mã nguồn trong thư mục [`game/`](game/README.md).
