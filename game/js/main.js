@@ -578,6 +578,9 @@ function loop(t) {
 }
 
 // ------------------------------------------------------------ PWA
-if ('serviceWorker' in navigator) {
-  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+// Chỉ đăng ký service worker cho bản nhiều file (bản 1 file không có manifest)
+if ('serviceWorker' in navigator && document.querySelector('link[rel="manifest"]')) {
+  addEventListener('load', () => {
+    try { navigator.serviceWorker.register('sw.js').catch(() => {}); } catch {}
+  });
 }

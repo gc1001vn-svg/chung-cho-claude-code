@@ -9,7 +9,12 @@ Toàn bộ chạy trong trình duyệt bằng WebGL (Three.js đóng gói sẵn 
 
 ## Chơi thế nào
 
-Mở `index.html` bằng bất kỳ web server tĩnh nào:
+**Cách nhanh nhất — 1 file duy nhất:** tải [`dist/con-duong-to-lua.html`](dist/con-duong-to-lua.html)
+(634 KB, đã gộp sẵn Three.js) vào điện thoại rồi mở bằng trình duyệt. Không cần server,
+không cần mạng.
+
+**Cách đầy đủ (cài như app, có icon trên màn hình chính):** mở `index.html`
+bằng bất kỳ web server tĩnh nào:
 
 ```bash
 cd game
@@ -78,6 +83,14 @@ thương đoàn, thương nhân Ba Tư…).
 Bậc 1–12 (mỗi 8 cấp lên 1 bậc), 4 độ hiếm (Thường / Hiếm / Tinh Anh / Truyền Thuyết),
 cường hóa +1…+12 bằng Đá Cường Hóa tại thợ rèn (tỉ lệ giảm dần theo cấp cường hóa).
 
+## Đóng gói lại bản 1 file
+
+```bash
+npx esbuild js/main.js --bundle --format=iife --minify \
+  --alias:three=./vendor/three.module.min.js --outfile=/tmp/bundle.js
+# rồi nhúng css/style.css + /tmp/bundle.js vào khung index.html
+```
+
 ## Cấu trúc mã nguồn
 
 ```
@@ -98,6 +111,7 @@ game/
 │   ├── save.js         lưu/tải localStorage
 │   └── audio.js        âm thanh tổng hợp bằng WebAudio
 ├── sw.js               service worker cache offline
+├── dist/               bản gộp 1 file HTML chạy độc lập
 └── vendor/             Three.js r170 (MIT)
 ```
 

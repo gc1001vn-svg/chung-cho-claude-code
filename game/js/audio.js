@@ -3,7 +3,7 @@
 // ============================================================
 export class Audio {
   constructor() {
-    this.enabled = localStorage.getItem('cdtl.sound') !== '0';
+    try { this.enabled = localStorage.getItem('cdtl.sound') !== '0'; } catch { this.enabled = true; }
     this.ctx = null;
   }
   init() {
@@ -12,7 +12,7 @@ export class Audio {
   }
   toggle() {
     this.enabled = !this.enabled;
-    localStorage.setItem('cdtl.sound', this.enabled ? '1' : '0');
+    try { localStorage.setItem('cdtl.sound', this.enabled ? '1' : '0'); } catch {}
   }
   play(kind) {
     if (!this.enabled) return;
