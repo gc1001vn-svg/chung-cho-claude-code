@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>Thương Lộ</title>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2A1B3C"/>
+      <stop offset="0.40" stop-color="#7A3A49"/>
+      <stop offset="0.68" stop-color="#D07E3C"/>
+      <stop offset="1" stop-color="#F3C978"/>
+    </linearGradient>
+    <linearGradient id="sand" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E7B368"/>
+      <stop offset="1" stop-color="#C1863F"/>
+    </linearGradient>
+    <!-- Full-bleed square on purpose: iOS masks the apple-touch-icon into a
+         squircle and Android masks the maskable icon into its own shape. Baking
+         rounded corners in here would show as a card-inside-a-card. -->
+    <clipPath id="frame">
+      <rect width="512" height="512"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#frame)">
+    <rect width="512" height="512" fill="url(#sky)"/>
+
+    <!-- Setting sun, offset left so the camel silhouette never covers it -->
+    <circle cx="112" cy="318" r="56" fill="#FFDA92" opacity="0.95"/>
+
+    <!-- Far dunes -->
+    <ellipse cx="120" cy="392" rx="190" ry="62" fill="#8C4A36" opacity="0.9"/>
+    <ellipse cx="400" cy="398" rx="180" ry="56" fill="#6F3830" opacity="0.9"/>
+
+    <!-- Foreground sand -->
+    <ellipse cx="256" cy="500" rx="330" ry="118" fill="url(#sand)"/>
+
+    <!-- Laden camel, facing right. Built from overlapping primitives sharing one
+         fill so the outline reads as a single silhouette at small icon sizes. -->
+    <g fill="#2A1A12">
+      <!-- legs -->
+      <rect x="162" y="352" width="17" height="88" rx="8"/>
+      <rect x="196" y="352" width="17" height="88" rx="8"/>
+      <rect x="272" y="352" width="17" height="86" rx="8"/>
+      <rect x="300" y="352" width="17" height="86" rx="8"/>
+      <!-- tail -->
+      <path d="M150 322 q-22 14 -24 46" stroke="#2A1A12" stroke-width="13" stroke-linecap="round" fill="none"/>
+      <!-- body -->
+      <ellipse cx="234" cy="330" rx="94" ry="45"/>
+      <!-- humps -->
+      <ellipse cx="203" cy="292" rx="41" ry="31"/>
+      <ellipse cx="268" cy="295" rx="37" ry="28"/>
+      <!-- neck -->
+      <path d="M310 330 q26 -44 46 -78" stroke="#2A1A12" stroke-width="30" stroke-linecap="round" fill="none"/>
+      <!-- head and muzzle -->
+      <ellipse cx="360" cy="243" rx="26" ry="18" transform="rotate(-18 360 243)"/>
+      <ellipse cx="390" cy="252" rx="15" ry="10" transform="rotate(-12 390 252)"/>
+      <!-- ear -->
+      <path d="M348 222 l6 -20 l13 15 z"/>
+    </g>
+
+    <!-- Cargo bundle strapped between the humps: the "trade" of the trade route -->
+    <g>
+      <rect x="206" y="252" width="62" height="40" rx="10" fill="#F3C978" stroke="#2A1A12" stroke-width="9"/>
+      <path d="M237 252 v40" stroke="#2A1A12" stroke-width="9"/>
+    </g>
+  </g>
+</svg>

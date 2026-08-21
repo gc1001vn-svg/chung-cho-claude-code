@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+
+    <!--
+      viewport-fit=cover lets the page paint under the notch so env(safe-area-inset-*)
+      in style.css can decide what actually goes there. user-scalable=no is kept for
+      Android; iOS has ignored it since iOS 10, which is why touch-guards.ts exists.
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+
+    <title>Thương Lộ</title>
+    <meta name="description" content="ARPG offline 2D isometric trên con đường thương mại cổ." />
+    <meta name="theme-color" content="#2A1B3C" />
+
+    <!-- Home-screen install on iOS. The apple-* forms are still the ones iOS reads;
+         mobile-web-app-capable is the standard spelling Android uses. -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Thương Lộ" />
+
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
+    <!-- 180×180 is the size iOS asks for; without it the home-screen icon is a
+         blurry screenshot of the page. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
+  </head>
+
+  <body>
+    <div id="game"></div>
+
+    <div id="build-id"></div>
+
+    <!-- Shown by a CSS media query whenever the phone is upright. -->
+    <div id="rotate-overlay" role="alertdialog" aria-live="polite">
+      <div class="rotate-card">
+        <div class="rotate-icon" aria-hidden="true"></div>
+        <p id="rotate-text">Xoay ngang điện thoại để chơi</p>
+      </div>
+    </div>
+
+    <div id="update-banner" role="status" hidden>
+      <span id="update-text"></span>
+      <button id="update-reload" type="button">Tải lại</button>
+      <button id="update-dismiss" type="button" aria-label="Đóng">✕</button>
+    </div>
+
+    <noscript>Trò chơi cần JavaScript. Hãy bật JavaScript trong trình duyệt rồi tải lại trang.</noscript>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

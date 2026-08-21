@@ -1,0 +1,27 @@
+{
+  "title.name": "Thương Lộ",
+  "title.tagline": "Con đường buôn bán phương Đông",
+  "title.tap_to_start": "Chạm để bắt đầu",
+  "title.tap_hint": "Chạm một lần để mở âm thanh",
+
+  "status.heading": "Phase 0 — khung dự án đã chạy",
+  "status.audio_on": "Âm thanh: đã mở",
+  "status.audio_off": "Âm thanh: chưa mở được",
+  "status.storage_persisted": "Lưu trữ bền: ĐƯỢC CẤP",
+  "status.storage_not_persisted": "Lưu trữ bền: BỊ TỪ CHỐI — nhớ xuất file save",
+  "status.storage_unsupported": "Lưu trữ bền: trình duyệt không hỗ trợ",
+  "status.quota": "Đã dùng {usage} MB / {quota} MB",
+  "status.quota_unknown": "Không đọc được dung lượng",
+  "status.display_mode": "Chế độ hiển thị: {mode}",
+  "status.next": "Phase 1 sẽ thêm bản đồ isometric và điều khiển chạm.",
+
+  "debug.fps": "FPS {value}",
+  "debug.toggle": "FPS",
+
+  "rotate.message": "Xoay ngang điện thoại để chơi",
+
+  "update.message": "Đã có bản mới.",
+  "update.reload": "Tải lại",
+  "update.dismiss": "Đóng",
+  "update.offline_ready": "Đã tải xong — chơi được cả khi mất mạng."
+}
