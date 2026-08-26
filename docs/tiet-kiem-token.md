@@ -64,6 +64,15 @@ Skill trong `.claude/skills/` của repo **che** skill cùng tên đồng bộ t
 claude.ai. Nghĩa là sửa bản trong repo thì chỉ repo đó được hưởng, các phiên khác
 vẫn dùng bản cũ trên tài khoản. Sửa xong nhớ tải lại lên claude.ai.
 
+## Hai skill làm sẵn
+
+| Skill | Dùng khi |
+|---|---|
+| `/giam-token` | Mở một repo bất kỳ → đo hiện trạng, cắt `CLAUDE.md`, tách skill dài, kiểm frontmatter |
+| `/bo-tro` | Bắt đầu dự án mới → nhận diện loại dự án rồi tìm plugin/skill/MCP hợp, kèm cảnh báo chi phí token |
+
+Tải hai skill này lên claude.ai thì mọi repo đều dùng được, không phải chép đi chép lại.
+
 ## Nguồn
 
 - [Best practices for Claude Code](https://code.claude.com/docs/en/best-practices)

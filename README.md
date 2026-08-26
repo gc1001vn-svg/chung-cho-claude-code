@@ -5,6 +5,8 @@ Repo dùng chung cho Claude Code.
 | Thư mục | Nội dung |
 | --- | --- |
 | `.claude/skills/md/` | Skill `/md` — chuyển file người dùng tải lên sang Markdown gọn để tiết kiệm token |
+| `.claude/skills/giam-token/` | Skill `/giam-token` — rà và cấu hình một repo bất kỳ để tốn ít token |
+| `.claude/skills/bo-tro/` | Skill `/bo-tro` — tìm plugin/skill/MCP hợp với dự án đang mở |
 | `docs/tiet-kiem-token.md` | Cách cấu hình repo để tốn ít token — áp dụng cho repo này và repo sau này |
 | `templates/CLAUDE.md` | Mẫu `CLAUDE.md` để chép sang repo mới |
 | `xnvtbctl/` | Trang `index.html` của XN VTB&CTL |
