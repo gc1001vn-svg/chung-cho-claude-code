@@ -17,7 +17,9 @@ bash "$(git rev-parse --show-toplevel)/.claude/skills/md/convert.sh" $ARGUMENTS
 - `all` → chuyển mọi file đã tải lên trong phiên.
 - Có tham số khác → coi là đường dẫn, hoặc một phần tên file đã tải lên.
 
-Kết quả `.md` nằm trong `.mdcache/` ở gốc repo (đã bị git bỏ qua). Script tự dùng lại bản đã chuyển nếu file nguồn không đổi.
+Kết quả `.md` nằm trong `.mdcache/` ở gốc repo (đã bị git bỏ qua), tên kèm đuôi file gốc (`bao-cao.pdf` → `bao-cao.pdf.md`) để hai file trùng tên khác định dạng không đè lên nhau. Script tự dùng lại bản đã chuyển nếu file nguồn không đổi.
+
+Trên đường ra, script bỏ bớt phần chắc chắn là rác để đỡ tốn token: cột trống không tiêu đề của bảng tính, ô `NaN`, và tiêu đề đầu trang lặp lại y hệt ở mọi trang PDF (giữ lần đầu). Nội dung thật không bị đụng tới — nếu người dùng hỏi đúng một chi tiết mà bản `.md` không có, hãy xem lại file gốc thay vì đoán.
 
 ## Quy tắc token — phần cốt lõi, phải tuân thủ
 

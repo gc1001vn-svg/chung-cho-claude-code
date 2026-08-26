@@ -1,2 +1,6 @@
 .mdcache/
 .claude/settings.local.json
+__pycache__/
+*.pyc
+.venv/
+venv/
