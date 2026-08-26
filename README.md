@@ -1,81 +1,46 @@
 # chung-cho-claude-code
 
-Repo dùng chung cho Claude Code. Nội dung hiện có:
+Repo dùng chung cho Claude Code.
 
-| Thư mục / file | Nội dung |
+| Thư mục | Nội dung |
 | --- | --- |
-| `convert.py` | CLI chuyển tài liệu và trang web sang Markdown (mô tả bên dưới) |
-| `.claude/skills/md/` | Skill `/md` — chuyển file người dùng vừa tải lên sang Markdown để tiết kiệm token |
+| `.claude/skills/md/` | Skill `/md` — chuyển file người dùng tải lên sang Markdown gọn để tiết kiệm token |
 | `xnvtbctl/` | Trang `index.html` của XN VTB&CTL |
+| `tests/` | Test cho các bộ lọc của skill `/md` |
 
-## convert.py — chuyển tài liệu sang Markdown
+## Skill `/md`
 
-Chuyển tài liệu (PDF, file Office, ảnh, HTML, ...) và trang web sang Markdown
-bằng [markitdown](https://github.com/microsoft/markitdown) của Microsoft.
+Gõ `/md` trong phiên Claude Code để chuyển file vừa tải lên (PDF, Word, Excel,
+PowerPoint, HTML, ảnh…) sang Markdown. Kết quả nằm trong `.mdcache/` và được
+dùng lại nếu file nguồn không đổi.
 
-Nếu anh đang trong một phiên Claude Code và chỉ cần đọc nội dung file vừa tải
-lên, hãy dùng skill `/md` — nó gọi `markitdown` sẵn, có cache và ước lượng
-token. `convert.py` dành cho khi cần chạy tay ngoài phiên, chuyển hàng loạt
-file hoặc ghi kết quả ra thư mục.
+Mục đích là để Claude đọc bản Markdown gọn thay vì nạp cả file gốc vào ngữ cảnh.
+Script in kèm ước lượng token và dàn bài của từng file, để với file lớn thì đọc
+đúng phần cần thay vì đọc trọn.
 
-### Cài đặt
+### Những gì script bỏ bớt
 
-```bash
-pip install -r requirements.txt
-```
+Chỉ bỏ phần chắc chắn là rác, không đụng vào nội dung:
 
-### Sử dụng
-
-In Markdown ra stdout:
-
-```bash
-python convert.py bao-cao.pdf
-python convert.py https://example.com/trang.html
-```
-
-Ghi ra một file:
-
-```bash
-python convert.py bao-cao.pdf -o bao-cao.md
-```
-
-Chuyển nhiều nguồn cùng lúc — khi có từ hai nguồn trở lên, `-o` là **thư mục**
-nhận mỗi nguồn một file `.md` (tên file lấy theo tên nguồn):
-
-```bash
-python convert.py *.docx *.pdf -o markdown/
-# wrote markdown/hop-dong.md
-# wrote markdown/bao-cao.md
-```
-
-Không có `-o` thì tất cả nguồn được in nối tiếp ra stdout, cách nhau một dòng trống.
-
-#### Tuỳ chọn
-
-| Tuỳ chọn | Ý nghĩa |
+| Rác | Vì sao bỏ được |
 | --- | --- |
-| `-o`, `--output PATH` | File đích (một nguồn) hoặc thư mục đích (nhiều nguồn) |
-| `-q`, `--quiet` | Không in dòng `wrote <file>` khi ghi ra file |
-| `--version` | In phiên bản |
-| `-h`, `--help` | Trợ giúp |
+| Cột không tiêu đề (`Unnamed: N`) mà mọi ô đều trống | markitdown sinh ra từ vùng trống của bảng tính |
+| Ô `NaN`, dòng trống hoàn toàn | ô trống của bảng tính |
+| Ảnh nhúng base64 | thay bằng chữ `(anh)` |
+| Tiêu đề đầu trang lặp y hệt ở mọi trang PDF | giữ lần xuất hiện đầu |
 
-#### Xử lý lỗi
+Cột có tiêu đề thật thì được giữ dù mọi ô đều trống. Các dòng chỉ khác nhau ở
+chữ số (`Thiết bị số 12` / `Thiết bị số 13`) **không** bị gộp — đây là lỗi đã
+mắc một lần khi làm và giờ có test canh.
 
-Một nguồn lỗi không làm dừng các nguồn còn lại: lỗi được in ra stderr, các nguồn
-khác vẫn được chuyển, và lệnh kết thúc với mã thoát `1` nếu có ít nhất một lỗi.
+Đo trên tài liệu mẫu: bảng tính 40 dòng có 9 cột trống giảm từ ~1861 xuống ~581
+token (−69%); PDF 12 trang có tiêu đề lặp giảm từ ~3585 xuống ~3197 token (−11%).
 
-```bash
-python convert.py khong-co.pdf bao-cao.pdf
-# error: no such file: khong-co.pdf
-# (nội dung Markdown của bao-cao.pdf)
-# exit code 1
-```
-
-### Chạy test
+## Chạy test
 
 ```bash
 pip install pytest
 python -m pytest
 ```
 
-Bộ test dùng converter giả nên chạy được mà không cần cài `markitdown`.
+Test chạy thẳng trên `awk`, không cần cài `markitdown`.

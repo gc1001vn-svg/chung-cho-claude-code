@@ -1,15 +1,2 @@
-[project]
-name = "chung-cho-claude-code"
-version = "0.2.0"
-description = "Convert documents to Markdown using Microsoft's markitdown"
-requires-python = ">=3.10"
-dependencies = [
-    "markitdown[all]",
-    "cffi",
-]
-
-[project.optional-dependencies]
-dev = ["pytest"]
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]

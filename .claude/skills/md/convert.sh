@@ -24,6 +24,16 @@ SUPPORTED='pdf|docx|doc|pptx|ppt|xlsx|xls|csv|tsv|html|htm|xml|json|txt|md|epub|
 human() { awk -v b="$1" 'BEGIN{ s="B KB MB GB"; split(s,u," "); i=1;
   while (b>=1024 && i<4){ b/=1024; i++ } printf (i==1?"%d %s":"%.1f %s"), b, u[i] }'; }
 
+# Ten file .md cho mot nguon. Phai kem duoi file: bao-cao.pdf va bao-cao.xlsx
+# la hai tai lieu khac nhau, khong duoc do chung vao mot .md.
+outname() {
+  local b e t
+  b=$(basename "$1")
+  e=$(echo "${b##*.}" | tr 'A-Z' 'a-z')
+  t=$(echo "${b%.*}" | sed -E 's/^[0-9a-f]{8}-//' | sed -E 's/[^A-Za-z0-9._-]+/_/g' | cut -c1-60)
+  echo "$OUTDIR/$t.$e.md"
+}
+
 # ---- chon file nguon ----
 declare -a SRC=()
 UPDIR=$(ls -dt /root/.claude/uploads/*/ 2>/dev/null | head -1)
@@ -59,8 +69,7 @@ for f in "${SRC[@]}"; do
   base=$(basename "$f")
   ext="${base##*.}"; ext=$(echo "$ext" | tr 'A-Z' 'a-z')
   # bo tien to bam cua he thong upload (vd 478f161f-ten_that.pdf)
-  ten=$(echo "${base%.*}" | sed -E 's/^[0-9a-f]{8}-//' | sed -E 's/[^A-Za-z0-9._-]+/_/g' | cut -c1-60)
-  out="$OUTDIR/$ten.md"
+  out=$(outname "$f")
   sz=$(stat -c %s "$f")
 
   if ! echo "$ext" | grep -qE "^($SUPPORTED)$"; then
@@ -70,7 +79,9 @@ for f in "${SRC[@]}"; do
   fi
 
   st="OK     "
-  if [ -f "$out" ] && [ "$out" -nt "$f" ]; then
+  src_abs=$(readlink -f "$f")
+  if [ -f "$out" ] && [ "$out" -nt "$f" ] \
+     && [ "$(cat "$out.src" 2>/dev/null)" = "$src_abs" ]; then
     st="SAN CO "
   else
     if ! markitdown "$f" > "$out.raw" 2>"$out.err"; then
@@ -89,9 +100,17 @@ for f in "${SRC[@]}"; do
       rm -f "$out.raw" "$out.err"; continue
     fi
     # don rac lam phinh token: anh nhung base64, khoang trang thua, dong trong lien tiep
+    skill_dir=$(dirname "${BASH_SOURCE[0]}")
+    # anh nhung base64 -> mot chu; bo ky tu ngat trang cua pdfminer; bo khoang trang cuoi dong
     sed -E 's#data:[a-zA-Z/+.-]+;base64,[A-Za-z0-9+/=]{20,}#(anh)#g' "$out.raw" \
-      | sed -E 's/[[:space:]]+$//' | cat -s > "$out"
-    rm -f "$out.raw" "$out.err"
+      | tr -d '\f' \
+      | sed -E 's/[[:space:]]+$//' \
+      | awk -f "$skill_dir/clean.awk" \
+      | cat -s > "$out.tmp"
+    # bo tieu de/chan trang lap lai (can hai luot nen phai qua file trung gian)
+    awk -f "$skill_dir/dedup.awk" "$out.tmp" "$out.tmp" > "$out"
+    echo "$src_abs" > "$out.src"
+    rm -f "$out.raw" "$out.err" "$out.tmp"
   fi
 
   msz=$(stat -c %s "$out"); tok=$((msz / 3))
@@ -108,9 +127,8 @@ printf "TONG: %d file | %s -> %s | ~%s token\n" \
 # ---- dan bai de doc chon loc thay vi nap ca file ----
 echo "--- DAN BAI ---"
 for f in "${SRC[@]}"; do
-  ten=$(echo "$(basename "${f%.*}")" | sed -E 's/^[0-9a-f]{8}-//' | sed -E 's/[^A-Za-z0-9._-]+/_/g' | cut -c1-60)
-  o="$OUTDIR/$ten.md"; [ -f "$o" ] || continue
-  echo "# $ten.md"
+  o=$(outname "$f"); [ -f "$o" ] || continue
+  echo "# $(basename "$o")"
   if grep -qE '^#{1,4} ' "$o"; then
     grep -nE '^#{1,4} ' "$o" | head -25 | cut -c1-110
   else
