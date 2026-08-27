@@ -44,6 +44,24 @@ Nếu Claude cứ lặp lại một lỗi dù đã có luật cấm, thường l
 
 Mẫu sẵn: [`templates/CLAUDE.md`](../templates/CLAUDE.md).
 
+### Có đặt được một `CLAUDE.md` dùng chung cho mọi dự án không?
+
+Có, ở `~/.claude/CLAUDE.md` — mẫu: [`templates/user-CLAUDE.md`](../templates/user-CLAUDE.md).
+Nhưng nó **chỉ chạy với Claude Code cài trên máy tính**. Phiên trên web hoặc điện
+thoại chạy trong container dựng mới mỗi lần, và claude.ai chỉ đồng bộ `skills/`
+với `plugins/` — không đồng bộ `CLAUDE.md`, cũng không giữ auto memory.
+
+Không phải vì thế mà `CLAUDE.md` trong repo là giải pháp tạm — nó tốt hơn thật:
+
+| | `~/.claude/CLAUDE.md` | `CLAUDE.md` trong repo |
+|---|---|---|
+| Phiên web / điện thoại | không chạy | chạy, vì nằm trong git |
+| Máy khác, người khác | phải chép tay | tự có khi clone |
+| Nội dung | chỉ nói chung chung được | ghi được lệnh test, quirk, cái bẫy riêng của repo |
+
+Thứ làm `CLAUDE.md` đáng giá lại đúng là phần riêng của từng repo — phần mà file
+dùng chung không chứa được. Hai file cộng vào nhau chứ không thay thế nhau.
+
 ## Viết skill
 
 - Frontmatter **chỉ 6 key** claude.ai chấp nhận: `name`, `description`,
