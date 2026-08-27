@@ -9,6 +9,7 @@ Repo dùng chung cho Claude Code.
 | `.claude/skills/bo-tro/` | Skill `/bo-tro` — tìm plugin/skill/MCP hợp với dự án đang mở |
 | `docs/tiet-kiem-token.md` | Cách cấu hình repo để tốn ít token — áp dụng cho repo này và repo sau này |
 | `templates/CLAUDE.md` | Mẫu `CLAUDE.md` để chép sang repo mới |
+| `templates/user-CLAUDE.md` | Mẫu cho `~/.claude/CLAUDE.md` — áp cho mọi dự án, **chỉ chạy trên máy tính** |
 | `xnvtbctl/` | Trang `index.html` của XN VTB&CTL |
 | `tests/` | Test cho bộ lọc của `/md` và cho frontmatter của skill |
 
