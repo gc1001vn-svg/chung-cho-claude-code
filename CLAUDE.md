@@ -26,3 +26,5 @@ thật, đếm dòng dữ liệu trước/sau, và thêm test cho ca vừa suýt
 Tài liệu dài để ra file riêng cùng thư mục, chỉ dẫn link tới.
 
 PR nhắm vào `main`; nhánh mặc định trên GitHub đang trỏ sai chỗ.
+
+Đầu phiên, lệnh đo (`bash scripts/do.sh`): `docs/DAU_PHIEN.md`.
