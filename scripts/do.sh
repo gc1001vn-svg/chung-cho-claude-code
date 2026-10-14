@@ -16,7 +16,7 @@ cd "$GOC" || exit 1
 dat=0
 tong=0
 log="$(mktemp)"
-trap 'rm -f "$log" "$log.html"' EXIT
+trap 'rm -f "$log"' EXIT
 
 chay() {
   tong=$((tong + 1))
@@ -40,8 +40,8 @@ for s in lint typecheck test build; do
   co_script "$s" && chay "$s" "npm run --silent $s"
 done
 
-# Thuoc rieng repo: convert.py doi duoc mot file HTML that. Hong "No module" thi chua cai thu vien.
-chay "convert:html" 'printf "<h1>Xin chao</h1>" > "$log.html" && python3 convert.py "$log.html" | grep -qx "# Xin chao"'
+# Thuoc rieng repo: test bo loc cua skill /md va frontmatter SKILL.md. Hong "No module" thi `pip install pytest`.
+chay "pytest" "python3 -m pytest -q"
 
 # Ba thuoc nay cai_dat.mjs luon chep vao, nen repo nao cung do duoc.
 [ -f scripts/check_token.mjs ] && chay "check:token" "node scripts/check_token.mjs"
